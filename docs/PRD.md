@@ -178,7 +178,7 @@ Moshari/
 └─ tests/ test_features.py test_split.py test_predict.py test_validate.py
 ```
 
-`Makefile`: `setup`, `features`, `train`, `test`, `app`. Also document the Windows equivalents in the README. Python 3.11; pinned: pandas, numpy, scikit-learn, joblib, streamlit, plotly, pytest.
+`Makefile`: `setup`, `features`, `train`, `test`, `app`. Also document the Windows equivalents in the README. Python 3.12; pinned: pandas, numpy, scikit-learn, joblib, streamlit, plotly, pytest.
 
 ---
 
