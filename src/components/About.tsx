@@ -10,7 +10,7 @@ import {
   Database,
 } from "lucide-react";
 import { CardHeader } from "./DashboardUI";
-import type { TEXTS } from "../data";
+import { dateLabel, modelInfo, type TEXTS } from "../data";
 
 type TextKey = keyof typeof TEXTS.en;
 
@@ -21,6 +21,9 @@ export default function About({
   l: (a: string, b: string) => string;
   t: (k: TextKey) => string;
 }) {
+  const info = modelInfo();
+  const trainedOn = `${dateLabel(info.train_start)} – ${dateLabel(info.train_end)}`;
+  const holdout = `${dateLabel(info.holdout_start)} – ${dateLabel(info.holdout_end)}`;
   const bullets = [
     [
       CloudRain,
@@ -115,8 +118,8 @@ export default function About({
           <h3>{t("mock")}</h3>
           <p>
             {l(
-              "This frontend uses deterministic, realistic sample data while the backend, feature pipeline, and models are in development. Demo outputs are not clinical guidance.",
-              "ব্যাকএন্ড, ফিচার পাইপলাইন ও মডেল তৈরির সময় এই ফ্রন্টএন্ডে বাস্তবসম্মত নমুনা তথ্য ব্যবহার করা হচ্ছে। এটি চিকিৎসা নির্দেশনা নয়।",
+              `Forecasts come from scikit-learn ${info.sklearn_version} models trained on 60 wards (${trainedOn}) and checked once on a holdout (${holdout}). An alert aid for public health teams, not clinical guidance.`,
+              `পূর্বাভাসগুলো ৬০টি ওয়ার্ডের তথ্যে (${trainedOn}) প্রশিক্ষিত scikit-learn ${info.sklearn_version} মডেল থেকে, এবং একবার চূড়ান্ত যাচাই করা হয়েছে (${holdout})। এটি জনস্বাস্থ্য দলের জন্য সতর্কতার সহায়ক, চিকিৎসা নির্দেশনা নয়।`,
             )}
           </p>
         </section>
@@ -127,12 +130,12 @@ export default function About({
           <p className="cost-line">0 API calls, 0 LLM tokens</p>
           <p>
             {l(
-              "0 API calls, 0 LLM tokens, model trained on Jan 2023 – Dec 2024 (illustrative mock dates).",
-              "0 API calls, 0 LLM tokens, মডেলের প্রশিক্ষণকাল জানুয়ারি ২০২৩ – ডিসেম্বর ২০২৪ (নমুনা তারিখ)।",
+              `0 API calls, 0 LLM tokens, model trained on ${trainedOn}. Fonts and forecasts load from this machine.`,
+              `0 API calls, 0 LLM tokens, মডেলের প্রশিক্ষণকাল ${trainedOn}। ফন্ট ও পূর্বাভাস এই কম্পিউটার থেকেই লোড হয়।`,
             )}
           </p>
           <span className="subtle-pill">
-            {l("Mock adapter: src/data.ts", "নমুনা অ্যাডাপ্টার: src/data.ts")}
+            {l("Data: public/data · python -m src.export", "তথ্য: public/data · python -m src.export")}
           </span>
         </section>
       </div>
