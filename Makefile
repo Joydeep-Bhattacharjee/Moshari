@@ -4,7 +4,7 @@ else
   PY := .venv/bin/python
 endif
 
-.PHONY: setup validate features eda backtest selection train test app
+.PHONY: setup validate features eda backtest selection train report test app
 
 setup:
 	python -m venv .venv
@@ -27,6 +27,9 @@ selection:
 
 train:
 	$(PY) -m src.train
+
+report:
+	$(PY) -m src.report
 
 test:
 	$(PY) -m pytest -q
