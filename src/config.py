@@ -7,7 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RAW_DATA_PATH = ROOT / "data" / "raw" / "dengue.csv"
 PROCESSED_DIR = ROOT / "data" / "processed"
+FEATURES_PATH = PROCESSED_DIR / "features.csv"
+FEATURE_PARAMS_PATH = PROCESSED_DIR / "feature_params.json"
 MODELS_DIR = ROOT / "models"
+META_PATH = MODELS_DIR / "meta.json"
 
 # --- Schema -----------------------------------------------------------------
 DATE_COL = "date"  # ISO date, Monday of each week
@@ -34,6 +37,10 @@ REQUIRED_COLS = (DATE_COL, CITY_COL, WARD_COL, *NUMERIC_COLS)
 # --- Grain ------------------------------------------------------------------
 DATA_FREQ = "W-MON"  # one row per ward per week; weeks start on Monday
 HORIZONS = (2, 3, 4)  # forecast horizons in weeks
+
+# --- Chronological split (PRD section 6.4) ----------------------------------
+HOLDOUT_FRACTION = 0.15  # last 15% of weeks, touched once
+PURGE_GAP_WEEKS = 4  # skipped weeks before each test block; must be >= max(HORIZONS)
 
 # --- Validation limits (PRD section 5) --------------------------------------
 # Inclusive (low, high) bounds; None means unbounded on that side.
