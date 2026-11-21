@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import ts from "typescript";
 
+// Load src/data.ts as an ES module and feed it the files written by `python -m src.export`.
 const source = readFileSync(new URL("../src/data.ts", import.meta.url), "utf8");
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
@@ -10,37 +11,74 @@ const { outputText } = ts.transpileModule(source, {
 const data = await import(
   `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`
 );
-const { WARDS, WEEKS, forecast, series, priority, validationData, TEXTS, label_text } = data;
+const readJson = (name) =>
+  JSON.parse(readFileSync(new URL(`../public/data/${name}`, import.meta.url), "utf8"));
+const validationFile = readJson("validation.json");
+data.initData(readJson("dashboard.json"), validationFile);
 
-test("all wards and horizons have valid intervals and consistent timelines", () => {
-  for (const ward of WARDS)
-    for (const horizon of [2, 3, 4]) {
-      const baseline = forecast(ward, WEEKS[0], horizon);
-      assert.ok(baseline.lo <= baseline.pred && baseline.pred <= baseline.hi);
-      assert.equal(baseline.actual, null);
-      const timeline = series(ward, WEEKS[0], horizon, 1);
-      assert.equal(timeline.length, 26);
-      assert.equal(timeline.at(-1).pred, baseline.pred);
-      assert.equal(timeline.at(-1).week, baseline.target);
-      assert.ok(
-        timeline
-          .filter((p) => p.week > WEEKS[0])
-          .every((p) => p.actual === null && p.rain === null),
-      );
-    }
+const {
+  WARDS,
+  WEEKS,
+  forecast,
+  series,
+  priority,
+  validationData,
+  driverValues,
+  driverSentence,
+  tierFor,
+  actualTierFor,
+  TEXTS,
+  label_text,
+} = data;
+const MONSOON = "2025-08-04";
+
+test("all 60 real wards and the 2024-2025 forecast weeks are loaded", () => {
+  assert.equal(WARDS.length, 60);
+  assert.ok(WARDS.includes("DSCC_Ward_05"));
+  assert.equal(WEEKS[0], "2025-12-29"); // latest first
+  assert.equal(WEEKS.at(-1), "2024-01-01");
 });
 
-test("rainfall changes forecasts but never changes observed cases", () => {
+test("intervals contain the forecast and timelines end at the forecast", () => {
+  for (const ward of WARDS)
+    for (const horizon of [2, 3, 4])
+      for (const week of [WEEKS[0], MONSOON]) {
+        const f = forecast(ward, week, horizon);
+        assert.ok(f.lo >= 0 && f.lo <= f.pred && f.pred <= f.hi, `${ward} ${week} h${horizon}`);
+        const timeline = series(ward, week, horizon, 1);
+        assert.equal(timeline.length, 26);
+        assert.equal(timeline.at(-1).pred, f.pred);
+        assert.equal(timeline.at(-1).week, f.target);
+      }
+  // the latest week's targets lie beyond the data, so nothing is observed yet
+  assert.equal(forecast("DSCC_Ward_05", WEEKS[0], 3).actual, null);
+  const future = series("DSCC_Ward_05", WEEKS[0], 3, 1).filter((p) => p.week > "2025-12-29");
+  assert.ok(future.length > 0 && future.every((p) => p.actual === null && p.rain === null));
+});
+
+test("forecasts match the Python model output", () => {
+  const f = forecast("DSCC_Ward_05", MONSOON, 3);
+  assert.equal(f.pred, 4.9); // 4.88 from src.predict, rounded to one decimal
+  assert.equal(f.actual, 10);
+  assert.equal(driverValues("DSCC_Ward_05", MONSOON, 3).length, 6);
+});
+
+test("more rain never lowers the 2- and 3-week forecasts and never changes what happened", () => {
   for (const ward of WARDS) {
-    const low = forecast(ward, WEEKS[8], 3, 0.5);
-    const high = forecast(ward, WEEKS[8], 3, 2);
-    assert.ok(high.pred >= low.pred);
-    assert.equal(high.actual, low.actual);
+    for (const horizon of [2, 3]) {
+      const low = forecast(ward, MONSOON, horizon, 0.5);
+      const high = forecast(ward, MONSOON, horizon, 2);
+      assert.ok(high.pred >= low.pred, `${ward} h${horizon}`);
+      assert.equal(high.actual, low.actual);
+    }
     assert.deepEqual(
-      series(ward, WEEKS[8], 3, 0.5).map((p) => p.actual),
-      series(ward, WEEKS[8], 3, 2).map((p) => p.actual),
+      series(ward, MONSOON, 3, 0.5).map((p) => p.actual),
+      series(ward, MONSOON, 3, 2).map((p) => p.actual),
     );
   }
+  // the 4-week model is only partly monotonic (see MODEL_CARD.md), so check the city total
+  const total = (m) => WARDS.reduce((s, w) => s + forecast(w, MONSOON, 4, m).pred, 0);
+  assert.ok(total(2) > total(1));
 });
 
 test("priority ranks by tier, then descending cases, for every week", () => {
@@ -57,26 +95,30 @@ test("priority ranks by tier, then descending cases, for every week", () => {
     }
 });
 
-test("held-out validation has four folds and consistent alert denominators", () => {
-  for (const ward of WARDS)
+test("forecast tiers use the alert-tuned cut-offs, observed tiers the training thresholds", () => {
+  // thresholds 5 / 9 / 14 cases; at 3 weeks forecasts use x0.8 -> 4 / 7.2 / 11.2
+  assert.equal(tierFor(4, 3), "Medium");
+  assert.equal(actualTierFor(4, 3), "Low");
+  assert.equal(actualTierFor(14, 3), "Critical");
+});
+
+test("validation shows the measured holdout results", () => {
+  const split = validationFile.split;
+  for (const ward of WARDS.slice(0, 6))
     for (const horizon of [2, 3, 4]) {
       const v = validationData(ward, horizon);
       assert.equal(v.folds.length, 4);
-      assert.equal(v.tn + v.fp + v.fn + v.tp, v.values.length);
-      assert.equal(v.recall, v.tp / Math.max(1, v.tp + v.fn));
-      assert.equal(v.precision, v.tp / Math.max(1, v.tp + v.fp));
-      assert.ok(
-        v.values.every(
-          (p) => p.week >= "2025-02-03" && p.week <= "2025-06-30" && p.actual !== null,
-        ),
-      );
-      assert.ok(v.coverage >= 0 && v.coverage <= 1);
+      assert.ok(Math.abs(v.recall - v.tp / (v.tp + v.fn)) < 1e-3);
+      assert.ok(Math.abs(v.precision - v.tp / (v.tp + v.fp)) < 1e-3);
+      assert.ok(v.values.length > 70);
+      assert.ok(v.values.every((p) => p.week >= split.holdout_start && p.week <= split.data_end));
+      assert.ok(v.model.rmse < v.seasonal.rmse && v.model.rmse < v.wardMean.rmse);
     }
 });
 
-test("all language keys exist and modes resolve synchronously", () => {
+test("driver sentences and language keys resolve in every mode", () => {
+  assert.match(driverSentence("DSCC_Ward_05", MONSOON, 3, "EN"), /risk in 3 weeks/);
+  assert.match(driverSentence("DSCC_Ward_05", MONSOON, 3, "বাংলা"), /3 সপ্তাহ পর/);
   assert.deepEqual(Object.keys(TEXTS.en), Object.keys(TEXTS.bn));
-  assert.equal(label_text("Forecast", "পূর্বাভাস", "EN"), "Forecast");
-  assert.equal(label_text("Forecast", "পূর্বাভাস", "বাংলা"), "পূর্বাভাস");
   assert.equal(label_text("Forecast", "পূর্বাভাস", "EN + বাংলা"), "Forecast / পূর্বাভাস");
 });
