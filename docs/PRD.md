@@ -1,118 +1,90 @@
 # PRD — Moshari: Ward-Level Dengue Early Warning
 
-## 1. Problem
+## 1. Problem statement
 
-Rain fills drains and containers. Aedes eggs become adult mosquitoes in 7–14 days, then infection and incubation follow, so dengue cases rise 2–4 weeks after rain. Wards with poor drainage, high density and poor sanitation rise faster. City corporations spray after hospital cases spike, when transmission is already weeks ahead.
+Dengue hits Dhaka and Chattogram every year. In peak season, hospitals run out of beds, saline and test kits. Mosquito control usually starts after hospital cases have already spiked, when the outbreak is weeks ahead of the response.
+
+Predicting dengue is not a same-day weather problem:
+
+- **Breeding clock.** Rain leaves stagnant water in drains and containers. Aedes eggs take 7–14 days to become adult mosquitoes, then infection and incubation follow. Cases rise 2–4 weeks after the rain.
+- **Ward vulnerability.** The same rain hits wards differently. A ward with poor drainage (`water_logging_risk_index`), crowding (`population_density_sqkm`) and weak waste collection (`sanitation_score`) becomes a hotspot faster than its neighbours.
 
 ## 2. Goal
 
-Forecast each ward's dengue risk 2, 3 and 4 weeks ahead from weather and ward vulnerability, so health officers can send spray teams before the peak.
+Build a working prototype that uses weather data to predict ward-level dengue risk 2–4 weeks ahead, so public health officers can target high-risk wards before outbreaks peak. Treat it as stage 1 of a production system.
 
-## 3. Success metrics
+## 3. Users
 
-| Metric | Target | Result (holdout 2024-07-01 → 2025-12-29) |
-|---|---|---|
-| RMSE vs seasonal-naive and ward-mean baselines | lower at h = 2, 3, 4 | 2.54 / 2.71 / 2.59 vs 3.93 / 3.91 / 3.88 (seasonal naive) |
-| Alert recall (true High/Critical weeks flagged High/Critical) | ≥ 0.70 | 0.696 / 0.661 / 0.818 |
-| 80% interval coverage | 0.70–0.90 | 0.93–0.94 all weeks; 0.83–0.87 on weeks with cases |
-| Rain-lag peak | inside 2–4 weeks | 3 weeks |
-| Fresh clone → running dashboard | ≤ 3 min | ~2 min |
-| External API calls / LLM tokens at runtime | 0 / 0 | 0 / 0 |
+- **City health officers** who plan mosquito spraying and larvicide teams.
+- **Public health analysts** who need to trust and check the forecasts.
 
-## 4. Users and stories
+## 4. User stories
 
-| ID | As a health officer, I want to… | Feature |
-|---|---|---|
-| S1 | see a ward's risk 2/3/4 weeks ahead | risk tier, predicted cases, 80% range |
-| S2 | understand why | driver chart and one-line reason |
-| S3 | know where to send spray teams first | ranked priority list, CSV download |
-| S4 | test "what if it rains more" | rainfall scenario slider (0.5×–2×) |
-| S5 | trust the forecast | validation view: split, baselines, errors per fold, alert metrics |
-
-## 5. Scope
-
-**In:** CSV ingestion and validation, weekly per-ward features, chronologically validated models for h = 2, 3, 4, risk tiers, intervals, drivers, rainfall scenario, React dashboard, CLI report, tests, CI, documentation.
-
-**Out:** live weather APIs, user accounts, LLMs, deep learning, cloud deployment.
-
-## 6. Data
-
-Source: organizer Google Sheet, exported to `data/raw/dengue.csv` — 31,320 rows, 60 wards × 522 weeks (Mondays 2016-01-04 → 2025-12-29), 5 cities.
-
-| Column | Meaning |
+| ID | As a health officer, I want to… |
 |---|---|
-| `date`, `ward_id`, `city` | week (Monday), ward key, city |
-| `rainfall_mm`, `avg_temp_c`, `max_temp_c`, `min_temp_c`, `relative_humidity_pct` | weekly weather |
-| `water_logging_risk_index`, `population_density_sqkm`, `sanitation_score` | ward vulnerability (constant per ward) |
-| `dengue_cases` | weekly case count (target) |
+| U1 | see the dengue risk of a ward 2, 3 or 4 weeks ahead |
+| U2 | know which weather and ward factors drive that risk |
+| U3 | see which wards need spray teams first |
+| U4 | check how reliable the forecasts have been in the past |
 
-**Validation rules** (`src/validate.py`, fail loudly): required columns, no missing values, numeric types, rain ≥ 0, humidity 0–100, temperature −5–50 °C, cases are non-negative integers, density > 0, no duplicate (ward, week), dates parse, ≥ 12 weeks per ward.
+## 5. Data
 
-## 7. Functional requirements
+The organizer's dataset: weekly records per ward, with `ward_id`, date, `rainfall_mm`, `avg_temp_C`, `relative_humidity_pct`, `water_logging_risk_index`, `population_density_sqkm`, `sanitation_score` and dengue cases.
+
+## 6. Functional requirements
 
 | ID | Requirement |
 |---|---|
-| F1 | Ingest the raw CSV, validate it and build a complete weekly grid per ward |
-| F2 | Compute multi-week rain lags (0–8 weeks), rain windows, temperature and humidity lags, ward vulnerability, rain × vulnerability interactions and season, grouped by `ward_id` with no future data |
-| F3 | Train one model per horizon (2, 3, 4 weeks) and choose it on a walk-forward backtest |
-| F4 | Output predicted cases, an 80% interval and a risk tier (Low / Medium / High / Critical) for any ward and week |
-| F5 | Explain each forecast by feature group, with a plain-language sentence |
-| F6 | Re-forecast a ward with its last 4 weeks of rain scaled 0.5×–2× |
-| F7 | Rank all wards for a week and horizon; export the list as CSV |
-| F8 | Show forecast, priority list, validation evidence and method in a bilingual (English / বাংলা) web dashboard |
+| R1 | **Weather data processing:** ingest temperature, humidity and rainfall, and compute multi-week rainfall lags per `ward_id` to match the mosquito breeding cycle. |
+| R2 | **Risk prediction engine:** a trained ML or statistical model takes weather inputs and produces predicted cases and a risk category (Low, Medium, High, Critical) for a selected ward and time window. |
+| R3 | **Cost and resource efficiency:** run efficiently on local hardware; minimize API calls; keep processing costs low for public health offices. |
+| R4 | **User interface:** a working web dashboard that shows predictions and the main weather drivers clearly. |
 
-## 8. Build steps
-
-| Step | Output | Command |
-|---|---|---|
-| 1. Repository and environment | folders, pinned `requirements.txt`, `package.json`, Makefile, CI | `make setup` |
-| 2. Data audit and validation | `docs/data_audit.md`, `src/validate.py` | `python -m src.validate` |
-| 3. Weekly grid and features | `src/data.py`, `src/features.py` (34 features, targets `y_h2..y_h4`) | `python -m src.features` |
-| 4. Lag evidence | rain-lag correlation, raw and season-removed, in `models/meta.json` | `python -m src.eda` |
-| 5. Chronological split and baselines | holdout + 4 walk-forward folds with 4-week gaps; ward-mean and seasonal-naive baselines | `python -m src.backtest` |
-| 6. Model selection | Poisson GLM vs gradient boosting (Poisson / log target), learning-rate check, monotonic constraints, lag ablation, alert threshold, feature-group importance | `python -m src.selection` |
-| 7. Final training | fit on pre-holdout weeks, score the holdout once, save `models/model.joblib` | `python -m src.train` |
-| 8. Inference | all-ward forecasts, drivers, rainfall scenario, CSV report | `python -m src.report` |
-| 9. Dashboard data | every forecast the dashboard shows, from `model.joblib`, into `public/data/*.json` (also runs before `npm run dev`) | `python -m src.export` |
-| 10. Dashboard | React app: Forecast, Priority list, Validation, About | `npm run dev` |
-| 11. Tests and CI | Python tests and frontend data tests on every push | `make test` |
-| 12. Documentation | `README.md`, `ARCHITECTURE.md`, `MODEL_CARD.md` | — |
-
-## 9. Model design
-
-- **Framing:** one row per (ward, forecast week *t*); predict cases at *t + h*. Separate models per horizon, so errors do not compound.
-- **Leakage guards:** features use only weeks ≤ *t*; targets use `shift(-h)`; thresholds are learned on training weeks only.
-- **Validation:** last 15% of weeks as the holdout, after a 4-week gap, scored once. Model choice uses 4 expanding walk-forward folds (52-week test blocks, 4-week gaps).
-- **Selected models:** Poisson GLM for 2 and 3 weeks; gradient boosting on log cases with monotonic constraints (+ rain, + waterlogging, − sanitation) for 4 weeks.
-- **Tiers:** P50 / P75 / P90 of positive training cases (5 / 9 / 14). Forecasts are tiered with a decision scale tuned for ≥ 0.70 backtest alert recall.
-- **Uncertainty:** quantile models at 10% and 90%.
-- **Explanations:** grouped ablation against training medians (local); grouped permutation importance (global).
-
-## 10. Non-functional requirements
+## 7. Non-functional requirements
 
 | Area | Requirement |
 |---|---|
-| Speed | dashboard click < 1 s (measured ~5 ms); 60-ward forecast < 1 s (measured ~150 ms) |
-| Cost | 0 API calls, 0 LLM tokens at runtime; fonts bundled locally |
-| Reproducibility | pinned dependencies; seeded models; same model and data give byte-identical exports |
-| Security | dev server bound to 127.0.0.1; only trusted, committed `joblib` files are loaded |
-| Usability | colour-blind-safe tiers with text labels; English, Bangla and bilingual modes |
+| Setup | a fresh clone launches locally in ≤ 3 minutes using the README commands |
+| Speed | fast local inference from a saved model (joblib or pickle) |
+| Cost | no unnecessary API calls; any LLM use has token and cost controls |
+| Validation | chronological train/test split, never random |
+| Transparency | all AI assistants and external APIs listed in the README |
 
-## 11. Deliverables
+## 8. Acceptance criteria
 
-- Public GitHub repository with distributed commits from all members
-- `README.md`: quickstart, results, AI disclosure, external APIs
-- `ARCHITECTURE.md`: data-flow diagram, chronological split, model selection, cost controls
-- `MODEL_CARD.md`: intended use, metrics, limitations, ethics
-- `models/model.joblib`, `models/meta.json`, `public/data/*.json`
-- Uncut demo video (≤ 3 min) on localhost
+- Multi-week, ward-level rainfall lag features are computed in code, not hard-coded.
+- The model generates predictions and risk tiers dynamically for any selected ward and week.
+- The dashboard has clear inputs (ward, week, horizon) and a breakdown of the drivers behind each forecast.
+- `ARCHITECTURE.md` (1–2 pages) has a data-flow diagram, the chronological validation split and the reasons for the model choice.
+- `ARCHITECTURE.md` documents API-call minimization and cost controls.
+- Git history shows commits from every team member across the 24 hours.
 
-## 12. Risks and mitigations
+## 9. Out of scope
 
-| Risk | Mitigation |
-|---|---|
-| Cross-ward or future leakage | per-ward `groupby` shifts, purge gaps, train-only thresholds, leakage tests |
-| Tuning to the holdout | holdout scored once; all choices made on the backtest |
-| Model not better than baselines | both baselines reported per fold and on the holdout |
-| Setup fails for judges | pinned dependencies, committed model and dashboard data, fresh-clone test |
-| Stale dashboard numbers | export runs before every `npm run dev`; a test compares the exported data with `meta.json` |
+- Live weather APIs
+- User accounts and authentication
+- Cloud deployment
+
+## 10. Deliverables
+
+1. Public GitHub repository with a dependency file (`requirements.txt` and/or `package.json`)
+2. `README.md` with launch commands, AI disclosure and external APIs
+3. `ARCHITECTURE.md`
+4. Saved model file
+5. Uncut demo video (≤ 3 minutes) on localhost, with voiceover and no slides
+
+## 11. Build plan
+
+1. Set up the repository, environment and CI.
+2. Audit and validate the dataset.
+3. Build weekly per-ward features with multi-week rainfall lags.
+4. Define the chronological split and baseline models.
+5. Train and select the model; define risk tiers.
+6. Save the model; build inference and driver explanations.
+7. Build the dashboard.
+8. Write README and ARCHITECTURE.md; test a fresh clone.
+9. Record the demo video and submit.
+
+## 12. Timeline
+
+Round: 21 November 2:00 PM BST → 22 November 2:00 PM BST.
