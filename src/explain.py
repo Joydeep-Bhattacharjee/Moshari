@@ -1,7 +1,8 @@
 """Explainability without SHAP (PRD section 6.8).
 
-Global: permutation importance by feature group. Shuffling a whole group at once keeps
-correlated features (e.g. rain lags) from hiding each other's importance.
+Local: grouped ablation. Set one feature group to its training median, re-predict; the change in
+predicted cases is that group's signed impact. Global: permutation importance by feature group.
+Working on whole groups keeps correlated features (e.g. rain lags) from hiding each other.
 """
 from __future__ import annotations
 
@@ -37,3 +38,48 @@ def group_permutation_importance(
             increases.append(_rmse(y_true, model.predict(shuffled)) - base)
         importance[group] = round(float(np.mean(increases)), 4)
     return importance
+
+
+MIN_IMPACT_CASES = 0.05  # impacts smaller than this are treated as no effect
+
+GROUP_LABELS = {
+    "rain": "recent rain",
+    "temperature": "temperature",
+    "humidity": "humidity",
+    "ward": "ward vulnerability",
+    "interactions": "rain x vulnerability",
+    "season": "season",
+}
+# (phrase when the group raises risk, phrase when it lowers risk)
+GROUP_PHRASES = {
+    "rain": ("heavy rain in recent weeks", "little recent rain"),
+    "temperature": ("mosquito-friendly temperatures", "temperatures outside the mosquito range"),
+    "humidity": ("high humidity", "low humidity"),
+    "ward": ("poor drainage, crowding or sanitation in this ward", "good drainage and sanitation in this ward"),
+    "interactions": ("recent rain falling on a vulnerable ward", "little rain on vulnerable areas"),
+    "season": ("the time of year (monsoon season)", "the time of year (dry season)"),
+}
+
+
+def group_impacts(model, rows: pd.DataFrame, medians: dict) -> pd.DataFrame:
+    """Signed impact (cases) per feature group per row: prediction minus prediction with that
+    group set to its training median. Positive = the group pushes risk up."""
+    base = model.predict(rows)
+    impacts = {}
+    for group, cols in FEATURE_GROUPS.items():
+        used = [c for c in cols if c in model.feature_cols]
+        if used:
+            neutral = rows.assign(**{c: medians[c] for c in used})
+            impacts[group] = base - model.predict(neutral)
+    return pd.DataFrame(impacts, index=rows.index)
+
+
+def driver_sentence(tier: str, horizon: int, impacts: pd.Series, top_n: int = 2) -> str:
+    """Plain-language reason, e.g. 'High risk in 3 weeks, mainly driven by heavy rain ...'."""
+    raising = impacts[impacts > MIN_IMPACT_CASES].sort_values(ascending=False).head(top_n)
+    if not raising.empty:
+        reasons = " and ".join(GROUP_PHRASES[g][0] for g in raising.index)
+        return f"{tier} risk in {horizon} weeks, mainly driven by {reasons}."
+    lowering = impacts.sort_values().head(top_n)
+    reasons = " and ".join(GROUP_PHRASES[g][1] for g in lowering.index)
+    return f"{tier} risk in {horizon} weeks, kept down by {reasons}."
