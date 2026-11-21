@@ -448,7 +448,6 @@ export default function App() {
             <span>
               Moshari <b>v2.0</b>
             </span>
-            <span>PRD v2</span>
           </div>
         </div>
       </aside>

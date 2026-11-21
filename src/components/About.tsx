@@ -6,11 +6,9 @@ import {
   ShieldCheck,
   Check,
   Radar,
-  FlaskConical,
-  Database,
 } from "lucide-react";
 import { CardHeader } from "./DashboardUI";
-import { dateLabel, modelInfo, type TEXTS } from "../data";
+import type { TEXTS } from "../data";
 
 type TextKey = keyof typeof TEXTS.en;
 
@@ -21,9 +19,6 @@ export default function About({
   l: (a: string, b: string) => string;
   t: (k: TextKey) => string;
 }) {
-  const info = modelInfo();
-  const trainedOn = `${dateLabel(info.train_start)} – ${dateLabel(info.train_end)}`;
-  const holdout = `${dateLabel(info.holdout_start)} – ${dateLabel(info.holdout_end)}`;
   const bullets = [
     [
       CloudRain,
@@ -73,7 +68,7 @@ export default function About({
         <span className="about-radar">
           <Radar size={42} strokeWidth={1.25} />
         </span>
-        <div className="eyebrow">MOSHARI · PRD v2</div>
+        <div className="eyebrow">MOSHARI</div>
         <h2>{l("A head start against dengue.", "ডেঙ্গুর বিরুদ্ধে আগাম প্রস্তুতি।")}</h2>
         <p>
           {l(
@@ -111,34 +106,6 @@ export default function About({
           </div>
         ))}
       </section>
-
-      <div className="about-bottom">
-        <section className="card">
-          <FlaskConical size={22} />
-          <h3>{t("mock")}</h3>
-          <p>
-            {l(
-              `Forecasts come from scikit-learn ${info.sklearn_version} models trained on 60 wards (${trainedOn}) and checked once on a holdout (${holdout}). An alert aid for public health teams, not clinical guidance.`,
-              `পূর্বাভাসগুলো ৬০টি ওয়ার্ডের তথ্যে (${trainedOn}) প্রশিক্ষিত scikit-learn ${info.sklearn_version} মডেল থেকে, এবং একবার চূড়ান্ত যাচাই করা হয়েছে (${holdout})। এটি জনস্বাস্থ্য দলের জন্য সতর্কতার সহায়ক, চিকিৎসা নির্দেশনা নয়।`,
-            )}
-          </p>
-        </section>
-
-        <section className="card">
-          <Database size={22} />
-          <h3>{l("Local by design", "স্থানীয় ব্যবহারের জন্য")}</h3>
-          <p className="cost-line">0 API calls, 0 LLM tokens</p>
-          <p>
-            {l(
-              `0 API calls, 0 LLM tokens, model trained on ${trainedOn}. Fonts and forecasts load from this machine.`,
-              `0 API calls, 0 LLM tokens, মডেলের প্রশিক্ষণকাল ${trainedOn}। ফন্ট ও পূর্বাভাস এই কম্পিউটার থেকেই লোড হয়।`,
-            )}
-          </p>
-          <span className="subtle-pill">
-            {l("Data: public/data · python -m src.export", "তথ্য: public/data · python -m src.export")}
-          </span>
-        </section>
-      </div>
     </div>
   );
 }

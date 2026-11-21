@@ -63,7 +63,7 @@ The organizer's dataset: weekly records per ward, with `ward_id`, date, `rainfal
 
 - Live weather APIs
 - User accounts and authentication
-- Cloud deployment
+- Server-side model hosting (the online demo serves exported forecasts as static files)
 
 ## 10. Deliverables
 
@@ -72,6 +72,7 @@ The organizer's dataset: weekly records per ward, with `ward_id`, date, `rainfal
 3. `ARCHITECTURE.md`
 4. Saved model file
 5. Uncut demo video (≤ 3 minutes) on localhost, with voiceover and no slides
+6. Live demo on Vercel: https://moshari-dengue.vercel.app
 
 ## 11. Build plan
 
