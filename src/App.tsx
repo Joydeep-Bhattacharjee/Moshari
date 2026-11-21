@@ -33,18 +33,23 @@ import Chart from "./components/Chart";
 import { Badge, CardHeader } from "./components/DashboardUI";
 import {
   addWeeks,
+  cityName,
   dateLabel,
+  driverSentence,
   driverValues,
   DRIVER_NAMES,
   forecast,
+  hasForecast,
   label_text,
   priority,
   series,
-  validationData,
   TEXTS,
   TIER_COLORS,
+  topDriverLabel,
   WARDS,
+  wardInfo,
   WEEKS,
+  weekLabel,
   type Language,
   type Tier,
 } from "./data";
@@ -152,15 +157,14 @@ function Timeline({
       title: { text: l("Cases", "কেস"), font: { size: 9 }, standoff: 5 },
       gridcolor: "#edf1f5",
       zeroline: false,
-      range: [0, Math.max(...points.map((p) => p.hi)) * 1.3],
+      range: [0, Math.max(1, ...points.map((p) => Math.max(p.hi ?? 0, p.actual ?? 0))) * 1.3],
       fixedrange: true,
-      dtick: 25,
     },
     yaxis2: {
       title: { text: "mm", font: { size: 9 } },
       overlaying: "y",
       side: "right",
-      range: [0, 230],
+      range: [0, Math.max(50, ...points.map((p) => p.rain ?? 0)) * 1.15],
       showgrid: false,
       zeroline: false,
       fixedrange: true,
@@ -240,7 +244,7 @@ function Timeline({
 
 export default function App() {
   const [lang, setLang] = useState<Language>("EN");
-  const [ward, setWard] = useState("Ward-07");
+  const [ward, setWard] = useState(WARDS.includes("DSCC_Ward_05") ? "DSCC_Ward_05" : WARDS[0]);
   const [week, setWeek] = useState(WEEKS[0]);
   const [horizon, setHorizon] = useState(3);
   const [multiplier, setMultiplier] = useState(1);
@@ -251,9 +255,23 @@ export default function App() {
   const current = forecast(ward, week, horizon, multiplier);
   const baseline = forecast(ward, week, horizon);
   const ranked = useMemo(() => priority(week, horizon), [week, horizon]);
-  const drivers = driverValues(ward, horizon, multiplier);
-  const change = current.pred - baseline.pred;
-  const selectedId = Number(ward.split("-")[1]);
+  const drivers = driverValues(ward, week, horizon);
+  const change = Math.round((current.pred - baseline.pred) * 10) / 10;
+  const info = wardInfo(ward);
+  const city = cityName(ward, lang);
+  const previousWeek = addWeeks(week, -1);
+  const signed = (n: number) => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(1)}`;
+  const times = (m: number) => (Number.isInteger(m) ? m.toFixed(1) : String(m));
+  const level = (v: number) =>
+    v >= 0.66 ? l("High", "উচ্চ") : v >= 0.45 ? l("Moderate", "মাঝারি") : l("Low", "কম");
+  const advice = (tier: Tier) =>
+    tier === "Critical"
+      ? l("Immediate attention", "তাৎক্ষণিক নজর দিন")
+      : tier === "High"
+        ? l("Prioritize intervention", "হস্তক্ষেপে অগ্রাধিকার")
+        : tier === "Medium"
+          ? l("Increase surveillance", "নজরদারি বাড়ান")
+          : l("Continue monitoring", "পর্যবেক্ষণ অব্যাহত রাখুন");
   const tabs: { id: Tab; icon: typeof Activity }[] = [
     { id: "forecast", icon: Activity },
     { id: "priority", icon: Layers3 },
@@ -262,8 +280,17 @@ export default function App() {
   ];
   function downloadCsv() {
     const rows = [
-      ["Rank", "Ward", "Risk Tier", "Predicted Cases", "Low (80%)", "High (80%)", "Top Driver"],
-      ...ranked.map((r, i) => [i + 1, r.ward, r.tier, r.pred, r.lo, r.hi, "Rain lags 2–4w"]),
+      ["Rank", "Ward", "City", "Risk Tier", "Predicted Cases", "Low (80%)", "High (80%)", "Top Driver"],
+      ...ranked.map((r, i) => [
+        i + 1,
+        r.ward,
+        wardInfo(r.ward).city,
+        r.tier,
+        r.pred,
+        r.lo,
+        r.hi,
+        topDriverLabel(r.ward, week, horizon, "EN"),
+      ]),
     ];
     const url = URL.createObjectURL(
       new Blob(["\uFEFF" + rows.map((row) => row.join(",")).join("\n")], {
@@ -301,7 +328,7 @@ export default function App() {
             <MapPin size={15} />
           </span>
           <div>
-            {l("Dhaka, Bangladesh", "ঢাকা, বাংলাদেশ")}
+            {l("Bangladesh · 5 city corporations", "বাংলাদেশ · ৫টি সিটি কর্পোরেশন")}
             <small>{l("Ward surveillance workspace", "ওয়ার্ড নজরদারি কর্মক্ষেত্র")}</small>
           </div>
           <span className="online-dot" />
@@ -318,14 +345,16 @@ export default function App() {
           <div className="select-wrap">
             <select id="ward" value={ward} onChange={(e) => setWard(e.target.value)}>
               {WARDS.map((w) => (
-                <option key={w}>{w}</option>
+                <option key={w} value={w}>
+                  {w} · {cityName(w, lang).short}
+                </option>
               ))}
             </select>
             <ChevronDown size={14} />
           </div>
           <div className="field-note">
             <span className="teal-dot" />
-            {l("Dhaka North City Corporation", "ঢাকা উত্তর সিটি কর্পোরেশন")}
+            {city.full}
           </div>
           <label className="control-label" htmlFor="week">
             <CalendarDays size={14} />
@@ -335,7 +364,7 @@ export default function App() {
             <select id="week" value={week} onChange={(e) => setWeek(e.target.value)}>
               {WEEKS.map((w) => (
                 <option value={w} key={w}>
-                  {dateLabel(w, true)}, 2025{w === WEEKS[0] ? ` · ${l("Latest", "সর্বশেষ")}` : ""}
+                  {weekLabel(w)}{w === WEEKS[0] ? ` · ${l("Latest", "সর্বশেষ")}` : ""}
                 </option>
               ))}
             </select>
@@ -370,7 +399,7 @@ export default function App() {
             {l("What changes if it rains more?", "বৃষ্টি বাড়লে কী বদলায়?")}
           </p>
           <div className="rain-multiplier">
-            {multiplier.toFixed(1)}
+            {times(multiplier)}
             <span>×</span>
             <small>{l("normal rainfall", "স্বাভাবিক বৃষ্টিপাত")}</small>
           </div>
@@ -380,7 +409,7 @@ export default function App() {
             type="range"
             min=".5"
             max="2"
-            step=".1"
+            step=".25"
             value={multiplier}
             onChange={(e) => setMultiplier(Number(e.target.value))}
             style={{ "--range": `${((multiplier - 0.5) / 1.5) * 100}%` } as CSSProperties}
@@ -488,7 +517,7 @@ export default function App() {
               <CalendarDays size={16} />
               <div>
                 <span>{l("FORECAST ORIGIN", "পূর্বাভাসের সূচনা")}</span>
-                <strong>{dateLabel(week, true)}, 2025</strong>
+                <strong>{weekLabel(week)}</strong>
               </div>
             </div>
           </div>
@@ -545,7 +574,7 @@ export default function App() {
                     </h2>
                     <span className="location-caption">
                       <MapPin size={11} />
-                      {l("Dhaka North", "ঢাকা উত্তর")}
+                      {city.short}
                     </span>
                   </div>
                   <span className="horizon-caption">
@@ -577,7 +606,7 @@ export default function App() {
                     </div>
                     <p>
                       <span className="small-orange-dot" />
-                      {l("Early action recommended", "আগাম পদক্ষেপ নেওয়ার পরামর্শ")}
+                      {advice(current.tier)}
                     </p>
                   </section>
                   <section className="card kpi">
@@ -594,8 +623,9 @@ export default function App() {
                     <p>
                       <span className="trend">
                         <ArrowUpRight size={12} />
-                        {current.pred -
-                          forecast(ward, addWeeks(week, -1), horizon, multiplier).pred}
+                        {hasForecast(previousWeek)
+                          ? signed(current.pred - forecast(ward, previousWeek, horizon).pred)
+                          : "—"}
                       </span>
                       {l("vs. previous week", "আগের সপ্তাহের তুলনায়")}
                     </p>
@@ -655,8 +685,8 @@ export default function App() {
                         <span
                           className="help-icon"
                           title={l(
-                            "Illustrative grouped contributions, not causal effects.",
-                            "নমুনা বৈশিষ্ট্যের অবদান; কারণ-ফল সম্পর্ক নয়।",
+                            "Change in predicted cases when each group is set to its typical (training median) value. Not a causal effect.",
+                            "প্রতিটি গ্রুপকে সাধারণ (প্রশিক্ষণ-মধ্যমা) মানে রাখলে পূর্বাভাস কতটা বদলায়; এটি কারণ-ফল নয়।",
                           )}
                         >
                           <Info size={15} />
@@ -671,7 +701,7 @@ export default function App() {
                             <div
                               className={`driver-bar ${drivers[i] < 0 ? "negative" : ""}`}
                               style={{
-                                width: `${(Math.abs(drivers[i]) / Math.max(...drivers.map(Math.abs))) * 79}%`,
+                                width: `${(Math.abs(drivers[i]) / Math.max(0.01, ...drivers.map(Math.abs))) * 79}%`,
                               }}
                             />
                             <span className={drivers[i] < 0 ? "negative-value" : ""}>
@@ -695,10 +725,7 @@ export default function App() {
                     <div className="driver-insight">
                       <Sparkles size={15} />
                       <p>
-                        {l(
-                          "Rainfall over the past 2–4 weeks and ward vulnerability are the strongest drivers of this forecast.",
-                          "গত ২–৪ সপ্তাহের বৃষ্টিপাত ও ওয়ার্ডের ঝুঁকিপ্রবণতা এই পূর্বাভাসের প্রধান প্রভাবক।",
-                        )}
+                        {driverSentence(ward, week, horizon, lang)}
                       </p>
                     </div>
                   </section>
@@ -735,7 +762,7 @@ export default function App() {
                       <div className="scenario-pane selected-scenario">
                         <span className="scenario-eyebrow">
                           {t("scenario")}
-                          <span>{multiplier.toFixed(1)}×</span>
+                          <span>{times(multiplier)}×</span>
                         </span>
                         <div className="scenario-number">
                           {current.pred}
@@ -760,8 +787,8 @@ export default function App() {
                         <>
                           <TrendingUp size={13} />
                           {l(
-                            `${Math.abs(change)} ${change > 0 ? "more" : "fewer"} predicted cases (${change > 0 ? "+" : ""}${Math.round((change / baseline.pred) * 100)}%) compared with baseline.`,
-                            `মূল অবস্থার তুলনায় ${Math.abs(change)}টি কেস ${change > 0 ? "বেশি" : "কম"} হতে পারে।`,
+                            `${Math.abs(change).toFixed(1)} ${change > 0 ? "more" : "fewer"} predicted cases${baseline.pred > 0 ? ` (${change > 0 ? "+" : ""}${Math.round((change / baseline.pred) * 100)}%)` : ""} compared with baseline.`,
+                            `মূল অবস্থার তুলনায় ${Math.abs(change).toFixed(1)}টি কেস ${change > 0 ? "বেশি" : "কম"} হতে পারে।`,
                           )}
                         </>
                       )}
@@ -776,11 +803,11 @@ export default function App() {
                       <div>
                         <span>{l("Waterlogging susceptibility", "জলাবদ্ধতার ঝুঁকি")}</span>
                         <strong>
-                          {(0.57 + (selectedId % 5) * 0.06).toFixed(2)}
+                          {info.waterlogging.toFixed(2)}
                           <small>/ 1.00</small>
                         </strong>
                       </div>
-                      <span className="context-tag">{l("Elevated", "বর্ধিত")}</span>
+                      <span className="context-tag">{level(info.waterlogging)}</span>
                     </div>
                     <div className="context-row">
                       <span className="context-icon">
@@ -789,8 +816,20 @@ export default function App() {
                       <div>
                         <span>{l("Population density", "জনসংখ্যার ঘনত্ব")}</span>
                         <strong>
-                          {(21000 + selectedId * 450).toLocaleString()}
+                          {info.density.toLocaleString()}
                           <small> / km²</small>
+                        </strong>
+                      </div>
+                    </div>
+                    <div className="context-row">
+                      <span className="context-icon">
+                        <ShieldCheck size={16} />
+                      </span>
+                      <div>
+                        <span>{l("Sanitation score (higher is better)", "স্যানিটেশন স্কোর (বেশি হলে ভালো)")}</span>
+                        <strong>
+                          {info.sanitation.toFixed(2)}
+                          <small>/ 1.00</small>
                         </strong>
                       </div>
                     </div>
@@ -891,8 +930,7 @@ export default function App() {
                               {r.lo} – {r.hi}
                             </td>
                             <td>
-                              <CloudRain size={13} className="inline-icon" />
-                              {l("Rain lags 2–4w", "২–৪ সপ্তাহ আগের বৃষ্টি")}
+                              {topDriverLabel(r.ward, week, horizon, lang)}
                             </td>
                           </tr>
                         ))}
