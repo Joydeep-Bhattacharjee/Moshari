@@ -1,0 +1,13 @@
+[theme]
+base = "light"
+primaryColor = "#0F5257"
+backgroundColor = "#FBF8F3"
+secondaryBackgroundColor = "#F1ECE3"
+textColor = "#1F2A30"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+# A fixed address stops Streamlit from looking up this machine's public IP (an outbound call)
+# when it runs headless, so the app makes no external requests at all.
+serverAddress = "localhost"
