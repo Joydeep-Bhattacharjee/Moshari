@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -95,8 +94,7 @@ def build_dashboard(weekly: pd.DataFrame, bundle: dict, meta: dict) -> dict:
     weeks = sorted(d for d in frame[cfg.DATE_COL].unique() if start <= d <= last)
     info = meta["model_info"]
     model_keys = ("trained_at", "train_start", "train_end", "holdout_start", "holdout_end", "sklearn_version")
-    return {
-        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    return {  # no timestamp: the same model and data always give a byte-identical file
         "model": {key: info[key] for key in model_keys},
         "tiers": list(TIERS),
         "thresholds": {str(h): list(t) for h, t in bundle["thresholds"].items()},
