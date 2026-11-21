@@ -1,77 +1,206 @@
 export type Tier = "Low" | "Medium" | "High" | "Critical";
 export type Language = "EN" | "বাংলা" | "EN + বাংলা";
 
-export interface BackendForecastRecord {
-  ward: string;
-  week: string;
-  horizon: number;
-  pred: number;
-  lo?: number;
-  hi?: number;
-  actual?: number | null;
-  rain?: number | null;
-  drivers?: number[];
+// ==========================================
+// 1. DATA FILES WRITTEN BY `python -m src.export` (public/data/*.json)
+// ==========================================
+interface Band {
+  pred: number[];
+  lo: number[];
+  hi: number[];
 }
 
-// ==========================================
-// 1. MOCK / STUB DATA (Replace or override when backend data is ready)
-// ==========================================
-export const MOCK_WARDS = [
-  "Ward-01",
-  "Ward-02",
-  "Ward-04",
-  "Ward-05",
-  "Ward-07",
-  "Ward-09",
-  "Ward-12",
-  "Ward-14",
-  "Ward-16",
-  "Ward-19",
-  "Ward-21",
-  "Ward-24",
-] as const;
+interface WardForecasts extends Band {
+  actual: (number | null)[];
+  drivers: number[][];
+  scenario: Record<string, Band>;
+}
 
-export const MOCK_WEEKS = Array.from({ length: 12 }, (_, i) =>
-  new Date(Date.UTC(2025, 7, 25 - i * 7)).toISOString().slice(0, 10),
-);
+export interface WardInfo {
+  id: string;
+  city: string;
+  waterlogging: number;
+  density: number;
+  sanitation: number;
+}
 
-const MOCK_WARD_BASE_CASES = [
-  0, 33, 23, 20, 46, 18, 30, 78, 42, 106, 22, 30, 118, 42, 63, 25, 17, 31, 60, 56, 20, 38, 30, 42,
-  14,
-];
+export interface ModelInfo {
+  trained_at: string;
+  train_start: string;
+  train_end: string;
+  holdout_start: string;
+  holdout_end: string;
+  sklearn_version: string;
+}
+
+export interface Dashboard {
+  model: ModelInfo;
+  thresholds: Record<string, number[]>;
+  decision_scale: Record<string, number>;
+  weeks: string[];
+  first_selectable_week: string;
+  multipliers: number[];
+  driver_groups: string[];
+  wards: WardInfo[];
+  history: {
+    weeks: string[];
+    rain: Record<string, (number | null)[]>;
+    cases: Record<string, (number | null)[]>;
+  };
+  forecasts: Record<string, Record<string, WardForecasts>>;
+}
+
+interface ErrorPair {
+  mae: number;
+  rmse: number;
+}
+
+interface HorizonValidation {
+  model: string;
+  per_fold: (ErrorPair & { fold: number })[];
+  holdout: {
+    model: ErrorPair;
+    baselines: Record<string, ErrorPair>;
+    beats_baselines: boolean;
+    coverage_80: number;
+    coverage_80_nonzero_weeks: number;
+    alert_recall: number;
+    alert_precision: number;
+    tn: number;
+    fp: number;
+    fn: number;
+    tp: number;
+  };
+  lag_gain_pct: number;
+}
+
+export interface ValidationFile {
+  split: {
+    data_start: string;
+    data_end: string;
+    holdout_train_end: string;
+    holdout_start: string;
+    folds: { fold: number; train_end: string; test_start: string; test_end: string }[];
+  };
+  lag_correlation: {
+    lags: number[];
+    spearman_raw: number[];
+    spearman_deseasonalized: number[];
+    peak_lag_deseasonalized: number;
+  };
+  horizons: Record<string, HorizonValidation>;
+  test_series: Record<
+    string,
+    {
+      dates: string[];
+      wards: Record<string, Record<"y_true" | "pred" | "lo" | "hi", (number | null)[]>>;
+    }
+  >;
+}
+
+// Feature groups, in the order `python -m src.export` writes the driver values.
+export const DRIVER_GROUPS = ["rain", "temperature", "humidity", "ward", "interactions", "season"] as const;
 
 export const DRIVER_NAMES = [
-  ["Rain lags 2–4w", "২–৪ সপ্তাহ আগের বৃষ্টি"],
-  ["Ward vulnerability", "ওয়ার্ডের ঝুঁকিপ্রবণতা"],
-  ["Rainfall windows", "বৃষ্টিপাতের সময়কাল"],
+  ["Recent rainfall", "সাম্প্রতিক বৃষ্টিপাত"],
+  ["Temperature", "তাপমাত্রা"],
   ["Humidity", "আর্দ্রতা"],
+  ["Ward vulnerability", "ওয়ার্ডের ঝুঁকিপ্রবণতা"],
   ["Interactions", "পারস্পরিক প্রভাব"],
   ["Seasonality", "ঋতুগত প্রভাব"],
-  ["Temperature", "তাপমাত্রা"],
 ] as const;
 
-// ==========================================
-// 2. DATA ADAPTER / OVERRIDE HOOK FOR PYTHON BACKEND OUTPUT
-// ==========================================
-let backendRecords: BackendForecastRecord[] | null = null;
+// Per group: [raises risk EN, lowers risk EN, raises risk BN, lowers risk BN].
+const DRIVER_PHRASES: Record<(typeof DRIVER_GROUPS)[number], [string, string, string, string]> = {
+  rain: [
+    "heavy rain in recent weeks",
+    "little recent rain",
+    "সাম্প্রতিক সপ্তাহগুলোর ভারী বৃষ্টি",
+    "সাম্প্রতিক কম বৃষ্টি",
+  ],
+  temperature: [
+    "mosquito-friendly temperatures",
+    "temperatures outside the mosquito range",
+    "মশার অনুকূল তাপমাত্রা",
+    "মশার প্রতিকূল তাপমাত্রা",
+  ],
+  humidity: ["high humidity", "low humidity", "উচ্চ আর্দ্রতা", "কম আর্দ্রতা"],
+  ward: [
+    "poor drainage, crowding or sanitation in this ward",
+    "good drainage and sanitation in this ward",
+    "এই ওয়ার্ডের দুর্বল নিষ্কাশন, ঘনবসতি বা স্যানিটেশন",
+    "এই ওয়ার্ডের ভালো নিষ্কাশন ও স্যানিটেশন",
+  ],
+  interactions: [
+    "recent rain falling on a vulnerable ward",
+    "little rain on vulnerable areas",
+    "ঝুঁকিপূর্ণ ওয়ার্ডে সাম্প্রতিক বৃষ্টি",
+    "ঝুঁকিপূর্ণ এলাকায় কম বৃষ্টি",
+  ],
+  season: [
+    "the time of year (monsoon season)",
+    "the time of year (dry season)",
+    "বছরের এই সময় (বর্ষাকাল)",
+    "বছরের এই সময় (শুষ্ক মৌসুম)",
+  ],
+};
 
-/**
- * Call this helper once real JSON/CSV records from the Python backend are loaded.
- */
-export function setBackendForecastData(records: BackendForecastRecord[] | null) {
-  backendRecords = records;
+const CITY_NAMES: Record<string, [string, string, string]> = {
+  "Dhaka North": ["Dhaka North City Corporation", "ঢাকা উত্তর", "ঢাকা উত্তর সিটি কর্পোরেশন"],
+  "Dhaka South": ["Dhaka South City Corporation", "ঢাকা দক্ষিণ", "ঢাকা দক্ষিণ সিটি কর্পোরেশন"],
+  Chattogram: ["Chattogram City Corporation", "চট্টগ্রাম", "চট্টগ্রাম সিটি কর্পোরেশন"],
+  Gazipur: ["Gazipur City Corporation", "গাজীপুর", "গাজীপুর সিটি কর্পোরেশন"],
+  Narayanganj: ["Narayanganj City Corporation", "নারায়ণগঞ্জ", "নারায়ণগঞ্জ সিটি কর্পোরেশন"],
+};
+
+const MIN_DRIVER_CASES = 0.05; // impacts smaller than this count as no effect (same as src/explain.py)
+
+// ==========================================
+// 2. LOADED DATA (filled once by initData before the app renders)
+// ==========================================
+let dashboard: Dashboard;
+let validation: ValidationFile;
+const weekIndex = new Map<string, number>();
+const historyIndex = new Map<string, number>();
+const wardIndex = new Map<string, WardInfo>();
+
+export let WARDS: string[] = [];
+export let WEEKS: string[] = []; // selectable forecast weeks, latest first
+export let MULTIPLIERS: number[] = [];
+
+export function initData(data: Dashboard, checks: ValidationFile) {
+  if (data.driver_groups.join() !== DRIVER_GROUPS.join()) {
+    throw new Error(`Unexpected driver groups in dashboard.json: ${data.driver_groups.join(", ")}`);
+  }
+  dashboard = data;
+  validation = checks;
+  weekIndex.clear();
+  historyIndex.clear();
+  wardIndex.clear();
+  data.weeks.forEach((w, i) => weekIndex.set(w, i));
+  data.history.weeks.forEach((w, i) => historyIndex.set(w, i));
+  data.wards.forEach((w) => wardIndex.set(w.id, w));
+  WARDS = data.wards.map((w) => w.id);
+  WEEKS = data.weeks.filter((w) => w >= data.first_selectable_week).reverse();
+  MULTIPLIERS = [...data.multipliers];
 }
 
-function findBackendRecord(ward: string, week: string, horizon: number) {
-  if (!backendRecords || backendRecords.length === 0) return undefined;
-  return backendRecords.find(
-    (r) => r.ward === ward && r.week === week && r.horizon === horizon,
-  );
+export function modelInfo(): ModelInfo {
+  return dashboard.model;
 }
 
-// Backward-compatible exports used by App.tsx and components
-export const WARDS: string[] = [...MOCK_WARDS];
-export const WEEKS: string[] = [...MOCK_WEEKS];
+export function wardInfo(ward: string): WardInfo {
+  const info = wardIndex.get(ward);
+  if (!info) throw new Error(`Unknown ward: ${ward}`);
+  return info;
+}
+
+/** City of a ward: short name ("Dhaka North") and full city-corporation name. */
+export function cityName(ward: string, mode: Language) {
+  const city = wardInfo(ward).city;
+  const [full, shortBn, fullBn] = CITY_NAMES[city] ?? [city, city, city];
+  return { short: label_text(city, shortBn, mode), full: label_text(full, fullBn, mode) };
+}
 
 // ==========================================
 // 3. UI CONSTANTS & BILINGUAL DICTIONARY
@@ -111,10 +240,10 @@ export const TEXTS = {
     scenarioSub: "Explore how changing rainfall could shift the forecast.",
     context: "Your forecast at a glance",
     contextSub: "The context behind the numbers",
-    mock: "Mock preview",
-    notice: "A preview with purpose.",
+    mock: "Trained model",
+    notice: "Real forecasts.",
     noticeBody:
-      "You’re exploring realistic sample data. Live forecasts will appear when the model is connected.",
+      "Every number comes from the trained model. The latest week is dry season, so pick a monsoon week (Jun–Oct) to see alerts.",
     reset: "Reset to baseline",
     weeks: "weeks ahead",
     target: "Target week",
@@ -137,7 +266,7 @@ export const TEXTS = {
     validationSub: "Transparent backtesting. Honest uncertainty. No shortcuts.",
     aboutTitle: "Earlier warning. Healthier neighborhoods.",
     aboutSub: "Meet Moshari, your ward-level early-warning companion.",
-    demo: "Illustrative mock metrics — not measured model performance.",
+    demo: "Measured on the final holdout (Jul 2024 – Dec 2025), never used for training or model choice.",
   },
   bn: {
     forecast: "পূর্বাভাস",
@@ -166,9 +295,10 @@ export const TEXTS = {
     scenarioSub: "বৃষ্টিপাতের পরিবর্তনে পূর্বাভাস কেমন হতে পারে দেখুন।",
     context: "এক নজরে আপনার পূর্বাভাস",
     contextSub: "সংখ্যার পেছনের প্রেক্ষাপট",
-    mock: "নমুনা প্রিভিউ",
-    notice: "প্রস্তুতির জন্য একটি প্রিভিউ।",
-    noticeBody: "এখানে বাস্তবসম্মত নমুনা তথ্য দেখানো হচ্ছে। মডেল সংযুক্ত হলে প্রকৃত পূর্বাভাস দেখা যাবে।",
+    mock: "প্রশিক্ষিত মডেল",
+    notice: "প্রকৃত পূর্বাভাস।",
+    noticeBody:
+      "সব সংখ্যা প্রশিক্ষিত মডেল থেকে। সর্বশেষ সপ্তাহটি শুষ্ক মৌসুমের, তাই সতর্কতা দেখতে বর্ষার কোনো সপ্তাহ (জুন–অক্টোবর) বেছে নিন।",
     reset: "মূল অবস্থায় ফিরুন",
     weeks: "সপ্তাহ পরে",
     target: "লক্ষ্য সপ্তাহ",
@@ -191,12 +321,12 @@ export const TEXTS = {
     validationSub: "স্বচ্ছ যাচাই ও অনিশ্চয়তার সৎ উপস্থাপন।",
     aboutTitle: "আগাম সতর্কতা। সুস্থ এলাকা।",
     aboutSub: "আপনার ওয়ার্ডভিত্তিক আগাম সতর্কতার সঙ্গী মশারি।",
-    demo: "নমুনা পরিমাপ — প্রকৃত মডেলের কার্যকারিতা নয়।",
+    demo: "চূড়ান্ত যাচাই-পর্বে (জুলাই ২০২৪ – ডিসেম্বর ২০২৫) পরিমাপ করা; প্রশিক্ষণ বা মডেল বাছাইয়ে ব্যবহৃত হয়নি।",
   },
 };
 
 // ==========================================
-// 4. HELPERS, FORECAST ENGINE & VALIDATION
+// 4. HELPERS
 // ==========================================
 export function label_text(en: string, bn: string, mode: Language) {
   return mode === "বাংলা" ? bn : mode === "EN + বাংলা" ? `${en} / ${bn}` : en;
@@ -211,69 +341,78 @@ export function dateLabel(date: string, short = false) {
   });
 }
 
+/** "4 Aug 2025": short label with the year, for week pickers. */
+export function weekLabel(date: string) {
+  return `${dateLabel(date, true)} ${date.slice(0, 4)}`;
+}
+
 export function addWeeks(date: string, weeks: number) {
   return new Date(new Date(`${date}T00:00:00Z`).getTime() + weeks * 604800000)
     .toISOString()
     .slice(0, 10);
 }
 
-export function tierFor(cases: number): Tier {
-  return cases >= 100 ? "Critical" : cases >= 50 ? "High" : cases >= 25 ? "Medium" : "Low";
+// ==========================================
+// 5. FORECASTS FROM THE EXPORTED MODEL OUTPUT
+// ==========================================
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+function cuts(horizon: number, forPrediction: boolean) {
+  const scale = forPrediction ? dashboard.decision_scale[String(horizon)] : 1;
+  return dashboard.thresholds[String(horizon)].map((t) => t * scale);
 }
 
-function mockObservedCases(ward: string, target: string): number {
-  const id = Number(ward.split("-")[1]);
-  const index = Math.round((new Date(target).getTime() - new Date(WEEKS[0]).getTime()) / 604800000);
-  const baseline = Math.max(
-    2,
-    Math.round((MOCK_WARD_BASE_CASES[id] ?? 40) * (1 + (index - 3) * 0.018)),
+function tierFromCuts(cases: number, edges: number[]): Tier {
+  return cases >= edges[2] ? "Critical" : cases >= edges[1] ? "High" : cases >= edges[0] ? "Medium" : "Low";
+}
+
+/** Tier of a forecast: training thresholds lowered by the decision scale tuned for alert recall. */
+export function tierFor(cases: number, horizon: number): Tier {
+  return tierFromCuts(cases, cuts(horizon, true));
+}
+
+/** Tier of observed cases, using the training thresholds themselves. */
+export function actualTierFor(cases: number, horizon: number): Tier {
+  return tierFromCuts(cases, cuts(horizon, false));
+}
+
+/** Nearest precomputed rain multiplier (0.5x to 2x in 0.25 steps). */
+export function snapMultiplier(multiplier: number) {
+  return MULTIPLIERS.reduce((best, m) =>
+    Math.abs(m - multiplier) < Math.abs(best - multiplier) ? m : best,
   );
-  return Math.max(0, Math.round(baseline + Math.sin(index * 1.3 + id) * 11));
+}
+
+function wardForecasts(ward: string, horizon: number) {
+  const block = dashboard.forecasts[String(horizon)]?.[ward];
+  if (!block) throw new Error(`No forecasts for ${ward} at ${horizon} weeks`);
+  return block;
+}
+
+function indexOf(week: string) {
+  const i = weekIndex.get(week);
+  if (i === undefined) throw new Error(`No forecast for the week of ${week}`);
+  return i;
+}
+
+export function hasForecast(week: string) {
+  return weekIndex.has(week);
 }
 
 export function forecast(ward: string, week: string, horizon: number, multiplier = 1) {
-  const target = addWeeks(week, horizon);
-  const matched = findBackendRecord(ward, week, horizon);
-
-  if (matched) {
-    const pred = Math.max(
-      0,
-      Math.round(matched.pred * (1 + (multiplier - 1) * 0.42)),
-    );
-    const lo = matched.lo !== undefined ? Math.max(0, Math.round(matched.lo * (1 + (multiplier - 1) * 0.42))) : Math.max(0, Math.round(pred * 0.73));
-    const hi = matched.hi !== undefined ? Math.round(matched.hi * (1 + (multiplier - 1) * 0.42)) : Math.round(pred * 1.24);
-    const actual = matched.actual !== undefined ? matched.actual : target <= WEEKS[0] ? mockObservedCases(ward, target) : null;
-
-    return {
-      ward,
-      pred,
-      lo,
-      hi,
-      tier: tierFor(pred),
-      target,
-      actual,
-    };
-  }
-
-  const id = Number(ward.split("-")[1]);
-  const base = MOCK_WARD_BASE_CASES[id] ?? 40;
-  const seasonal =
-    1 + ((new Date(week).getTime() - new Date(WEEKS[0]).getTime()) / 604800000) * 0.018;
-  const pred = Math.max(
-    2,
-    Math.round(base * seasonal * (1 + (horizon - 3) * 0.095) * (1 + (multiplier - 1) * 0.42)),
-  );
-  const lo = Math.max(0, Math.round(pred * 0.73));
-  const hi = Math.round(pred * 1.24);
-
+  const block = wardForecasts(ward, horizon);
+  const i = indexOf(week);
+  const m = snapMultiplier(multiplier);
+  const band: Band = m === 1 ? block : block.scenario[String(m)];
+  const pred = round1(band.pred[i]);
   return {
     ward,
     pred,
-    lo,
-    hi,
-    tier: tierFor(pred),
-    target,
-    actual: target <= WEEKS[0] ? mockObservedCases(ward, target) : null,
+    lo: round1(band.lo[i]),
+    hi: round1(band.hi[i]),
+    tier: tierFor(pred, horizon),
+    target: addWeeks(week, horizon),
+    actual: block.actual[i],
   };
 }
 
@@ -284,95 +423,123 @@ export function priority(week: string, horizon: number) {
   );
 }
 
-export function series(ward: string, week: string, horizon: number, multiplier: number) {
-  const id = Number(ward.split("-")[1]);
-  return Array.from({ length: 26 }, (_, i) => {
-    const target = addWeeks(week, i - 25 + horizon);
-    const dateIndex = Math.round(
-      (new Date(target).getTime() - new Date(WEEKS[0]).getTime()) / 604800000,
-    );
-    const mockRain = Math.round(
-      65 +
-        43 * Math.sin(dateIndex * 0.32 + 1) +
-        24 * Math.pow(Math.sin(dateIndex * 0.71 + id * 0.1), 2),
-    );
-    const origin = addWeeks(target, -horizon);
-    const matched = findBackendRecord(ward, origin, horizon);
-    const fit = forecast(ward, origin, horizon, multiplier);
+function observed(ward: string, week: string, key: "rain" | "cases") {
+  const i = historyIndex.get(week);
+  return i === undefined ? null : dashboard.history[key][ward][i];
+}
 
+/** 26 target weeks ending at this forecast's target: rain, what happened, and what was forecast. */
+export function series(ward: string, week: string, horizon: number, multiplier: number) {
+  const block = wardForecasts(ward, horizon);
+  return Array.from({ length: 26 }, (_, k) => {
+    const origin = addWeeks(week, k - 25);
+    const target = addWeeks(origin, horizon);
+    const i = weekIndex.get(origin);
+    const fit =
+      origin === week
+        ? forecast(ward, week, horizon, multiplier)
+        : i === undefined
+          ? null
+          : { pred: round1(block.pred[i]), lo: round1(block.lo[i]), hi: round1(block.hi[i]) };
     return {
       week: target,
-      rain: target <= WEEKS[0] ? (matched?.rain ?? mockRain) : null,
-      pred: fit.pred,
-      actual: target <= WEEKS[0] ? (matched?.actual ?? mockObservedCases(ward, target)) : null,
-      lo: fit.lo,
-      hi: fit.hi,
+      rain: observed(ward, target, "rain"),
+      actual: observed(ward, target, "cases"),
+      pred: fit?.pred ?? null,
+      lo: fit?.lo ?? null,
+      hi: fit?.hi ?? null,
     };
   });
 }
 
-export function driverValues(ward: string, horizon: number, multiplier: number) {
-  const matched = findBackendRecord(ward, WEEKS[0], horizon);
-  if (matched?.drivers && matched.drivers.length === DRIVER_NAMES.length) {
-    return matched.drivers;
-  }
-
-  const id = Number(ward.split("-")[1]);
-  return [
-    22.4 * multiplier * (1 + (horizon - 3) * 0.1),
-    14.8 + (id % 4) * 1.1,
-    10.2 * multiplier,
-    6.4,
-    3.8,
-    -3.2,
-    -6.4,
-  ];
+/** Signed change in predicted cases from each feature group (order of DRIVER_NAMES). */
+export function driverValues(ward: string, week: string, horizon: number) {
+  return wardForecasts(ward, horizon).drivers[indexOf(week)];
 }
 
-/** One deterministic mock/backtest helper supplying the fit, folds, intervals and alerts. */
-export function validationData(ward: string, horizon: number) {
-  const history = series(ward, addWeeks("2025-06-30", -horizon), horizon, 1);
-  const values = history.filter((p) => p.week >= "2025-02-03");
-  const errors = values.map((p) => p.pred - p.actual!);
-  const score = (items: number[]) => ({
-    mae: items.reduce((s, n) => s + Math.abs(n), 0) / items.length,
-    rmse: Math.sqrt(items.reduce((s, n) => s + n * n, 0) / items.length),
-  });
-  let tn = 0,
-    fp = 0,
-    fn = 0,
-    tp = 0;
-  values.forEach((p) => {
-    if (p.actual! >= 50) {
-      if (p.pred >= 50) tp++;
-      else fn++;
-    } else if (p.pred >= 50) fp++;
-    else tn++;
-  });
-  const folds = Array.from({ length: 4 }, (_, i) =>
-    score(
-      errors.slice(Math.floor((i * errors.length) / 4), Math.floor(((i + 1) * errors.length) / 4)),
-    ),
-  );
-  const baseline = (lag: number) =>
-    score(
-      values.map((p) => {
-        const previous = history.find((row) => row.week === addWeeks(p.week, -lag));
-        return (previous?.actual ?? history[0].actual!) - p.actual!;
-      }),
+/** Index into DRIVER_NAMES of the factor that raises risk most, or -1 when none does. */
+export function topDriverIndex(ward: string, week: string, horizon: number) {
+  const values = driverValues(ward, week, horizon);
+  const best = values.reduce((bi, v, i) => (v > values[bi] ? i : bi), 0);
+  return values[best] > MIN_DRIVER_CASES ? best : -1;
+}
+
+export function topDriverLabel(ward: string, week: string, horizon: number, mode: Language) {
+  const i = topDriverIndex(ward, week, horizon);
+  return i < 0
+    ? label_text("None", "নেই", mode)
+    : label_text(DRIVER_NAMES[i][0], DRIVER_NAMES[i][1], mode);
+}
+
+/** Plain-language reason, mirroring driver_sentence in src/explain.py. */
+export function driverSentence(ward: string, week: string, horizon: number, mode: Language) {
+  const values = driverValues(ward, week, horizon);
+  const tier = forecast(ward, week, horizon).tier;
+  const ranked = DRIVER_GROUPS.map((g, i) => ({ g, v: values[i] }));
+  const raising = ranked
+    .filter((d) => d.v > MIN_DRIVER_CASES)
+    .sort((a, b) => b.v - a.v)
+    .slice(0, 2);
+  if (raising.length > 0) {
+    const en = raising.map((d) => DRIVER_PHRASES[d.g][0]).join(" and ");
+    const bn = raising.map((d) => DRIVER_PHRASES[d.g][2]).join(" ও ");
+    return label_text(
+      `${tier} risk in ${horizon} weeks, mainly driven by ${en}.`,
+      `${horizon} সপ্তাহ পর ${tier} ঝুঁকি, মূলত ${bn}-এর কারণে।`,
+      mode,
     );
+  }
+  const lowering = [...ranked].sort((a, b) => a.v - b.v).slice(0, 2);
+  const en = lowering.map((d) => DRIVER_PHRASES[d.g][1]).join(" and ");
+  const bn = lowering.map((d) => DRIVER_PHRASES[d.g][3]).join(" ও ");
+  return label_text(
+    `${tier} risk in ${horizon} weeks, kept down by ${en}.`,
+    `${horizon} সপ্তাহ পর ${tier} ঝুঁকি; ${bn} ঝুঁকি কমিয়ে রাখছে।`,
+    mode,
+  );
+}
+
+// ==========================================
+// 6. VALIDATION (measured by src/selection.py and src/train.py)
+// ==========================================
+export function validationData(ward: string, horizon: number) {
+  const h = validation.horizons[String(horizon)];
+  const holdout = h.holdout;
+  const ts = validation.test_series[String(horizon)];
+  const wardSeries = ts.wards[ward];
+  const values = ts.dates
+    .map((week, i) => ({
+      week,
+      pred: wardSeries.pred[i],
+      lo: wardSeries.lo[i],
+      hi: wardSeries.hi[i],
+      actual: wardSeries.y_true[i],
+    }))
+    .filter(
+      (p): p is { week: string; pred: number; lo: number; hi: number; actual: number } =>
+        p.actual !== null && p.pred !== null && p.lo !== null && p.hi !== null,
+    );
+  const wardMae =
+    values.reduce((s, p) => s + Math.abs(p.pred - p.actual), 0) / Math.max(1, values.length);
   return {
     values,
-    folds,
-    model: score(errors),
-    lastWeek: baseline(1),
-    seasonal: baseline(4),
-    tn,
-    fp,
-    fn,
-    tp,
-    recall: tp / Math.max(1, tp + fn),
-    precision: tp / Math.max(1, tp + fp),
-    coverage: values.filter((p) => p.actual! >= p.lo && p.actual! <= p.hi).length / values.length,
+    folds: h.per_fold,
+    model: holdout.model,
+    wardMae,
+    wardMean: holdout.baselines["B1_ward_mean"],
+    seasonal: holdout.baselines["B2_seasonal_naive"],
+    beatsBaselines: holdout.beats_baselines,
+    tn: holdout.tn,
+    fp: holdout.fp,
+    fn: holdout.fn,
+    tp: holdout.tp,
+    recall: holdout.alert_recall,
+    precision: holdout.alert_precision,
+    coverage: holdout.coverage_80,
+    coverageNonzero: holdout.coverage_80_nonzero_weeks,
+    lagGainPct: h.lag_gain_pct,
+    modelName: h.model,
+    split: validation.split,
+    lag: validation.lag_correlation,
   };
 }
