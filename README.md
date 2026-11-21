@@ -6,7 +6,7 @@
 
 - 60 wards (Dhaka North, Dhaka South, Chattogram, Gazipur, Narayanganj), weekly data 2016-01-04 → 2025-12-29
 - Bilingual dashboard (English / বাংলা) that runs fully offline: **0 API calls, 0 LLM tokens**
-- Video demo: **TODO(team): add unlisted video link**
+- Video demo: link added before submission (YouTube, unlisted)
 
 ## Results (final holdout, 2024-07-01 → 2025-12-29, scored once)
 
@@ -98,13 +98,18 @@ docs/            PRD, data audit
 |---|---|---|
 | Claude Code (Anthropic, Claude Opus 5.5) | Joydeep | Data audit, Python pipeline, tests, the data link between the model and the dashboard, documentation drafts. Every change was reviewed and committed by a team member; all numbers come from code in this repo. |
 | Figma Make | Apu | Generated the first version of the React dashboard (layout, components, bilingual text). |
-| TODO(team): other tools | TODO(team) | TODO(team) |
+| **FILL IN: other AI tools Apu used** | Apu | Dashboard development |
+| **FILL IN: AI tools Ridwan used** | Ridwan | Project skeleton and data validation |
 
 No AI model is used inside the product: forecasts come from scikit-learn models trained on the dataset.
 
 ## Team
 
-TODO(team): names and roles — e.g. Joydeep (data, model, validation, docs), Apu (dashboard), Ridwan (TODO).
+| Member | GitHub commits as | Role |
+|---|---|---|
+| Joydeep | Joydeep | Data audit, feature pipeline, models and validation, data link to the dashboard, docs |
+| Apu | mehA16 | React dashboard (bilingual UI) |
+| Ridwan | ridwan | Project skeleton and data validation |
 
 ## Limitations
 
