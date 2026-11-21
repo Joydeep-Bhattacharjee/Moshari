@@ -41,6 +41,9 @@ HORIZONS = (2, 3, 4)  # forecast horizons in weeks
 # --- Chronological split (PRD section 6.4) ----------------------------------
 HOLDOUT_FRACTION = 0.15  # last 15% of weeks, touched once
 PURGE_GAP_WEEKS = 4  # skipped weeks before each test block; must be >= max(HORIZONS)
+N_FOLDS = 4  # expanding-window walk-forward folds on pre-holdout weeks
+FOLD_TEST_WEEKS = 52  # one full monsoon season per test block
+MIN_TRAIN_WEEKS = 104  # at least two seasons before the first test block
 
 # --- Validation limits (PRD section 5) --------------------------------------
 # Inclusive (low, high) bounds; None means unbounded on that side.
