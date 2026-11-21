@@ -21,7 +21,17 @@ export default function Validation({
 }) {
   const validation = validationData(ward, horizon);
   const values = validation.values;
+  const split = validation.split;
+  const lag = validation.lag;
   const percent = (n: number) => `${(n * 100).toFixed(1)}%`;
+  const monthYear = (date: string) =>
+    new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", {
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  const rmseCut = Math.round((1 - validation.model.rmse / validation.seasonal.rmse) * 100);
+  const lagColors = lag.lags.map((k) => (k >= 2 && k <= 4 ? "#258b82" : "#bbd5e6"));
   const x = values.map((p) => p.week);
   const fitData: Data[] = [
     { x, y: values.map((p) => p.lo), type: "scatter", line: { width: 0 }, hoverinfo: "skip" },
@@ -66,16 +76,20 @@ export default function Validation({
         />
         <div className="split-timeline">
           <div>
-            <strong>{l("Training", "প্রশিক্ষণ")}</strong>
-            <span>Jan 2023 – Dec 2024</span>
+            <strong>{l("Training + 4 walk-forward folds", "প্রশিক্ষণ + ৪ ধাপের যাচাই")}</strong>
+            <span>
+              {monthYear(split.data_start)} – {monthYear(split.holdout_train_end)}
+            </span>
           </div>
           <div className="purge">
             <strong>{l("4-week gap", "৪ সপ্তাহ বিরতি")}</strong>
-            <span>Jan 2025</span>
+            <span>{monthYear(split.holdout_start)}</span>
           </div>
           <div className="testing">
-            <strong>{l("Validation", "যাচাই")}</strong>
-            <span>Feb – Jun 2025</span>
+            <strong>{l("Holdout (scored once)", "চূড়ান্ত যাচাই (একবার)")}</strong>
+            <span>
+              {monthYear(split.holdout_start)} – {monthYear(split.data_end)}
+            </span>
           </div>
         </div>
         <div className="split-note">
@@ -91,7 +105,10 @@ export default function Validation({
           [
             l("Alert recall", "সতর্কতা শনাক্তকরণ"),
             percent(validation.recall),
-            l("High + Critical outbreaks caught", "High + Critical প্রাদুর্ভাব শনাক্ত"),
+            l(
+              "High + Critical weeks caught · all wards, holdout",
+              "High + Critical সপ্তাহ শনাক্ত · সব ওয়ার্ড, চূড়ান্ত যাচাই",
+            ),
           ],
           [
             l("Alert precision", "সতর্কতার নির্ভুলতা"),
@@ -101,12 +118,15 @@ export default function Validation({
           [
             l("80% interval coverage", "৮০% সীমার অন্তর্ভুক্তি"),
             percent(validation.coverage),
-            l("Actuals inside the forecast range", "পূর্বাভাসসীমার মধ্যে প্রকৃত কেস"),
+            l(
+              `Actuals inside the range · ${percent(validation.coverageNonzero)} on weeks with cases`,
+              `সীমার মধ্যে প্রকৃত কেস · কেস থাকা সপ্তাহে ${percent(validation.coverageNonzero)}`,
+            ),
           ],
           [
             l("Model MAE", "মডেলের MAE"),
-            validation.model.mae.toFixed(1),
-            l("Selected ward · held-out weeks", "নির্বাচিত ওয়ার্ড · স্বতন্ত্র যাচাই"),
+            validation.wardMae.toFixed(2),
+            l("Selected ward · holdout weeks", "নির্বাচিত ওয়ার্ড · চূড়ান্ত যাচাইয়ের সপ্তাহ"),
           ],
         ].map(([label, value, note]) => (
           <section className="card kpi" key={label}>
@@ -171,24 +191,24 @@ export default function Validation({
             </thead>
             <tbody>
               <tr>
-                <td>{l("Last-week baseline", "গত সপ্তাহের মূল মডেল")}</td>
-                <td>{validation.lastWeek.mae.toFixed(1)}</td>
-                <td>{validation.lastWeek.rmse.toFixed(1)}</td>
+                <td>{l("Ward-mean baseline", "ওয়ার্ড-গড় মূল মডেল")}</td>
+                <td>{validation.wardMean.mae.toFixed(2)}</td>
+                <td>{validation.wardMean.rmse.toFixed(2)}</td>
               </tr>
               <tr>
-                <td>{l("4-week baseline", "৪ সপ্তাহের মূল মডেল")}</td>
-                <td>{validation.seasonal.mae.toFixed(1)}</td>
-                <td>{validation.seasonal.rmse.toFixed(1)}</td>
+                <td>{l("Same week last year baseline", "গত বছরের একই সপ্তাহের মূল মডেল")}</td>
+                <td>{validation.seasonal.mae.toFixed(2)}</td>
+                <td>{validation.seasonal.rmse.toFixed(2)}</td>
               </tr>
               <tr className="model-highlight">
                 <td>
-                  DengueRadar <span className="model-label">MODEL</span>
+                  Moshari <span className="model-label">MODEL</span>
                 </td>
                 <td>
-                  <strong>{validation.model.mae.toFixed(1)}</strong>
+                  <strong>{validation.model.mae.toFixed(2)}</strong>
                 </td>
                 <td>
-                  <strong>{validation.model.rmse.toFixed(1)}</strong>
+                  <strong>{validation.model.rmse.toFixed(2)}</strong>
                 </td>
               </tr>
             </tbody>
@@ -197,8 +217,8 @@ export default function Validation({
             <TrendingUp size={16} />
             <span>
               {l(
-                "Computed from the same synthetic held-out observations",
-                "একই কৃত্রিম স্বতন্ত্র পর্যবেক্ষণ থেকে গণনা করা",
+                `All wards, holdout ${monthYear(split.holdout_start)} – ${monthYear(split.data_end)}: RMSE ${rmseCut}% below the same-week-last-year baseline.`,
+                `সব ওয়ার্ড, চূড়ান্ত যাচাই ${monthYear(split.holdout_start)} – ${monthYear(split.data_end)}: RMSE গত বছরের একই সপ্তাহের মডেলের চেয়ে ${rmseCut}% কম।`,
               )}
             </span>
           </div>
@@ -209,8 +229,8 @@ export default function Validation({
           <CardHeader
             title={l("The lag behind the signal", "সংকেতের পেছনের সময় ব্যবধান")}
             subtitle={l(
-              "Rainfall-to-cases correlation · lags 0–8 weeks",
-              "বৃষ্টিপাত ও কেসের সম্পর্ক · ০–৮ সপ্তাহ",
+              `Rain k weeks earlier vs cases, seasonal cycle removed · peak at ${lag.peak_lag_deseasonalized} weeks`,
+              `k সপ্তাহ আগের বৃষ্টি ও কেসের সম্পর্ক (ঋতুগত প্রভাব বাদে) · সর্বোচ্চ ${lag.peak_lag_deseasonalized} সপ্তাহে`,
             )}
           />
           <Chart
@@ -218,30 +238,19 @@ export default function Validation({
             label="Rainfall lag correlation"
             data={[
               {
-                x: Array.from({ length: 9 }, (_, i) => `${i}w`),
-                y: [0.16, 0.3, 0.58, 0.74, 0.67, 0.43, 0.27, 0.12, 0.05],
+                x: lag.lags.map((k) => `${k}w`),
+                y: lag.spearman_deseasonalized,
                 type: "bar",
-                marker: {
-                  color: [
-                    "#bbd5e6",
-                    "#bbd5e6",
-                    "#258b82",
-                    "#258b82",
-                    "#258b82",
-                    "#bbd5e6",
-                    "#bbd5e6",
-                    "#bbd5e6",
-                    "#bbd5e6",
-                  ],
-                },
+                marker: { color: lagColors },
                 hovertemplate: "Lag %{x}: %{y:.2f}<extra></extra>",
               },
             ]}
             layout={{
               yaxis: {
-                range: [0, 1],
                 gridcolor: "#edf1f5",
-                title: { text: l("Correlation", "সম্পর্ক"), font: { size: 10 } },
+                zeroline: true,
+                zerolinecolor: "#cbd5e1",
+                title: { text: l("Spearman correlation", "স্পিয়ারম্যান সম্পর্ক"), font: { size: 10 } },
               },
               bargap: 0.45,
             }}
@@ -251,8 +260,8 @@ export default function Validation({
           <CardHeader
             title={l("Did we catch the alert?", "সতর্কতা কি শনাক্ত হয়েছে?")}
             subtitle={l(
-              "High + Critical = positive outbreak alert",
-              "High + Critical = প্রাদুর্ভাবের সতর্কতা",
+              "High + Critical = outbreak alert · all wards, holdout weeks",
+              "High + Critical = প্রাদুর্ভাবের সতর্কতা · সব ওয়ার্ড, চূড়ান্ত যাচাই",
             )}
           />
           <div className="confusion-matrix">
