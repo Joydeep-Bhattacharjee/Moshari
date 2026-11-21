@@ -23,7 +23,7 @@
 
 ## Quickstart — the dashboard (Node.js 22 or newer)
 
-The trained model's forecasts are already exported to `public/data/`, so the dashboard needs only Node.js.
+`npm run dev` first runs the trained model (`models/model.joblib`) through `python -m src.export` to rebuild every forecast the dashboard shows, when the Python environment below is set up. With Node.js alone it says so and uses the committed snapshot of that same model output, so the dashboard always starts.
 
 ```bash
 git clone https://github.com/Joydeep-Bhattacharjee/Moshari.git
@@ -54,6 +54,8 @@ python -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt        # Windows: .venv\Scripts\python ...
 ```
 
+With `.venv` in place, every `npm run dev` rebuilds the forecasts from `models/model.joblib` before the dashboard starts (about 10–25 s). If your environment lives elsewhere, point `MOSHARI_PYTHON` at its Python.
+
 | Step | Command (`make` target) | Time |
 |---|---|---|
 | Validate the raw CSV | `python -m src.validate` (`make validate`) | ~2 s |
@@ -61,7 +63,7 @@ python -m venv .venv
 | Baseline backtest | `python -m src.backtest` (`make backtest`) | ~12 s |
 | Model selection on 4 walk-forward folds | `python -m src.selection` (`make selection`) | ~3 min |
 | Final fit + one holdout evaluation + bundle | `python -m src.train` (`make train`) | ~20 s |
-| **Export forecasts for the dashboard** | `python -m src.export` (`make export`) | ~10 s |
+| **Export forecasts for the dashboard** (also runs before `npm run dev`) | `python -m src.export` (`make export`) | ~10–25 s |
 | Weekly spray-team CSV | `python -m src.report --date 2025-08-04 --horizon 3` (`make report`) | ~3 s |
 | Tests | `python -m pytest -q` and `npm test` (`make test`) | ~70 s |
 
