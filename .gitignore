@@ -21,3 +21,6 @@ Thumbs.db
 reports/
 .ipynb_checkpoints/
 .streamlit/secrets.toml
+
+# Rebuilt by `python -m src.features`
+data/processed/features.csv
