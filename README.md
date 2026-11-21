@@ -98,18 +98,20 @@ docs/            PRD, data audit
 |---|---|---|
 | Claude Code (Anthropic, Claude Opus 5.5) | Joydeep | Data audit, Python pipeline, tests, the data link between the model and the dashboard, documentation drafts. Every change was reviewed and committed by a team member; all numbers come from code in this repo. |
 | Figma Make | Apu | Generated the first version of the React dashboard (layout, components, bilingual text). |
-| **FILL IN: other AI tools Apu used** | Apu | Dashboard development |
-| **FILL IN: AI tools Ridwan used** | Ridwan | Project skeleton and data validation |
+| Claude, Gemini | Apu | Dashboard development |
+| ChatGPT, Claude | Ridwan | Project skeleton and data validation |
 
 No AI model is used inside the product: forecasts come from scikit-learn models trained on the dataset.
 
 ## Team
 
-| Member | GitHub commits as | Role |
+| Member | GitHub account | Role |
 |---|---|---|
-| Joydeep | Joydeep | Data audit, feature pipeline, models and validation, data link to the dashboard, docs |
+| Joydeep | Joydeep-Bhattacharjee | Data audit, feature pipeline, models and validation, data link to the dashboard, docs |
 | Apu | mehA16 | React dashboard (bilingual UI) |
-| Ridwan | ridwan | Project skeleton and data validation |
+| Ridwan | shrabonmd2021-arch | Project skeleton and data validation |
+
+Note: the two earliest commits appear under GitHub user "servis" because they were made with a placeholder email (`your_email@example.com`) before git was configured; they are Joydeep's.
 
 ## Limitations
 
