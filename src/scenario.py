@@ -7,7 +7,7 @@ from __future__ import annotations
 import pandas as pd
 
 from src import config as cfg
-from src.features import build_features
+from src.features import RAIN_LAGS, RAIN_ROLL_WINDOWS, WINDOW_WEEKS, build_features
 from src.predict import ForecastError, predict_rows, rows_for
 
 SCENARIO_WEEKS = 4  # "rainfall in the last 4 weeks"
@@ -48,3 +48,26 @@ def run_scenario(weekly: pd.DataFrame, bundle: dict, ward: str, date, horizon: i
         "scenario": scenario,
         "change_cases": round(float(scenario["predicted_cases"] - baseline["predicted_cases"]), 3),
     }
+
+
+def scale_recent_rain_features(rows: pd.DataFrame, multiplier: float, params: dict) -> pd.DataFrame:
+    """Scenario features for many rows at once, without rebuilding the weekly table.
+
+    Row t's rain lags 0..3 are the 4 weeks ending at t, so only they scale; every rain window
+    and interaction is recomputed from the scaled lags. Matches run_scenario row for row.
+    """
+    lag = {k: rows[f"rain_lag_{k}"] * (multiplier if k < SCENARIO_WEEKS else 1.0) for k in RAIN_LAGS}
+    recent = [lag[k] for k in range(WINDOW_WEEKS)]
+    sum_lag2_4 = lag[2] + lag[3] + lag[4]
+    heavy_mm = rows[cfg.WARD_COL].map(params["heavy_rain_mm"])
+    updates = {
+        **{f"rain_lag_{k}": lag[k] for k in RAIN_LAGS},
+        **{f"rain_roll_{w}": sum(lag[k] for k in range(w)) for w in RAIN_ROLL_WINDOWS},
+        "rain_sum_lag2_4": sum_lag2_4,
+        "rain_max_4": pd.concat(recent, axis=1).max(axis=1),
+        "heavy_rain_weeks_4": sum((week > heavy_mm).astype(float) for week in recent),
+        "rain2_4_x_waterlog": sum_lag2_4 * rows[cfg.WATERLOG_COL],
+        "rain2_4_x_density": sum_lag2_4 * rows["density_log"],
+        "rain2_4_x_poor_sanitation": sum_lag2_4 * (1 - rows[cfg.SANITATION_COL]),
+    }
+    return rows.assign(**updates)
