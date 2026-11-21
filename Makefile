@@ -4,11 +4,12 @@ else
   PY := .venv/bin/python
 endif
 
-.PHONY: setup validate features eda backtest selection train test app
+.PHONY: setup validate features eda backtest selection train export report test app
 
 setup:
 	python -m venv .venv
 	$(PY) -m pip install -r requirements.txt
+	npm ci
 
 validate:
 	$(PY) -m src.validate
@@ -28,8 +29,15 @@ selection:
 train:
 	$(PY) -m src.train
 
+export:
+	$(PY) -m src.export
+
+report:
+	$(PY) -m src.report
+
 test:
 	$(PY) -m pytest -q
+	npm test
 
 app:
-	$(PY) -m streamlit run app.py
+	npm run dev
