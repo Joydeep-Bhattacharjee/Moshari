@@ -1,4 +1,4 @@
-# PRD v2 — DengueRadar: Ward-Level Dengue Early-Warning System
+# PRD v2 — Moshari: Ward-Level Dengue Early-Warning System
 
 *Hackathon Prelim · 21–22 Nov 2026 · this file replaces `PRD_FINAL.md`. Exact code for the basics is in `AGENT_BUILD_SPEC.md`.*
 
@@ -166,7 +166,7 @@ A slider for "rainfall multiplier for the last 4 weeks" (0.5× to 2×). Recomput
 ## 8. Engineering & repo
 
 ```
-dengue-radar/
+Moshari/
 ├─ README.md  ARCHITECTURE.md  MODEL_CARD.md  requirements.txt  Makefile  .gitignore
 ├─ .github/workflows/ci.yml        # pip install + pytest on push
 ├─ app.py
@@ -188,7 +188,7 @@ Owners: **P1** Lead/Docs/Video · **P2** Data/Features · **P3** Model/Validatio
 
 ### PART 1 — Repo & environment · P1 · 9:30–10:00 PM
 
-- [ ] 1.1 Public repo named `dengue-radar`, collaborators added, `.gitignore`, folders, `src/__init__.py`
+- [ ] 1.1 Public repo named `Moshari`, collaborators added, `.gitignore`, folders, `src/__init__.py`
 - [ ] 1.2 Everyone sets `git config user.name/email` (GitHub email); disable the AI co-author line
 - [ ] 1.3 venv + pinned `requirements.txt`; `Makefile`
 - [ ] 1.4 CI workflow running pytest (green on the empty test). **Done when:** every member has pushed one commit. · `chore: skeleton, env, CI`
@@ -274,7 +274,7 @@ Owners: **P1** Lead/Docs/Video · **P2** Data/Features · **P3** Model/Validatio
 
 | Time | Show / say |
 |---|---|
-| 0:00 | "Dengue follows rain by 2–4 weeks and hits wards differently. DengueRadar warns officers before the peak." |
+| 0:00 | "Dengue follows rain by 2–4 weeks and hits wards differently. Moshari warns officers before the peak." |
 | 0:15 | Validation tab: lag-correlation chart — "our data peaks at a 3-week lag" |
 | 0:35 | Forecast: pick a ward, the latest week, h=3 → tier, cases, range |
 | 1:00 | Drivers + breeding-window chart — "heavy rain 3 weeks ago + poor drainage" |
