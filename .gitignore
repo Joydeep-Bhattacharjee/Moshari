@@ -24,3 +24,5 @@ reports/
 
 # Rebuilt by `python -m src.features`
 data/processed/features.csv
+node_modules/
+dist/

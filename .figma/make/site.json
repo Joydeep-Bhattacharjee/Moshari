@@ -1,0 +1,10 @@
+{
+  "description": "Forecasts ward-level dengue risk 2–4 weeks ahead, helping public health teams prioritize spray operations with bilingual insights, alerts, and validation metrics.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
