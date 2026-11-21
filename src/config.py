@@ -11,6 +11,7 @@ FEATURES_PATH = PROCESSED_DIR / "features.csv"
 FEATURE_PARAMS_PATH = PROCESSED_DIR / "feature_params.json"
 MODELS_DIR = ROOT / "models"
 META_PATH = MODELS_DIR / "meta.json"
+MODEL_PATH = MODELS_DIR / "model.joblib"
 
 # --- Schema -----------------------------------------------------------------
 DATE_COL = "date"  # ISO date, Monday of each week
