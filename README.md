@@ -7,7 +7,7 @@
 - 60 wards (Dhaka North, Dhaka South, Chattogram, Gazipur, Narayanganj), weekly data 2016-01-04 → 2025-12-29
 - Bilingual dashboard (English / বাংলা) that runs fully offline: **0 API calls, 0 LLM tokens**
 - Live demo: **https://moshari-dengue.vercel.app** (the same model output, served as static files)
-- Video demo: link added before submission (YouTube, unlisted)
+- Video demo: **[watch on Google Drive](https://drive.google.com/drive/folders/1V1-U3qzLveCOFwAUWgBHRW8pvtZ-rPt-)**
 
 ## Results (final holdout, 2024-07-01 → 2025-12-29, scored once)
 
