@@ -112,8 +112,6 @@ No AI model is used inside the product: forecasts come from scikit-learn models 
 | Apu | mehA16 | React dashboard (bilingual UI) |
 | Ridwan | shrabonmd2021-arch | Project skeleton and data validation |
 
-Note: the two earliest commits appear under GitHub user "servis" because they were made with a placeholder email (`your_email@example.com`) before git was configured; they are Joydeep's.
-
 ## Limitations
 
 See [MODEL_CARD.md](MODEL_CARD.md#limitations). In short: an alert aid, not a diagnosis; trained on data up to May 2024; ward vulnerability scores are fixed per ward; intervals are wide on zero-case weeks; the Bangla text should be reviewed by a native speaker before field use.
