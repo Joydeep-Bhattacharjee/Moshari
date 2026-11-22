@@ -6,7 +6,7 @@
 
 - 60 wards (Dhaka North, Dhaka South, Chattogram, Gazipur, Narayanganj), weekly data 2016-01-04 → 2025-12-29
 - Runs fully offline from a saved model: **0 API calls, 0 LLM tokens**
-- Video demo (under 3 min, one take): **[watch on Google Drive](https://drive.google.com/drive/folders/1V1-U3qzLveCOFwAUWgBHRW8pvtZ-rPt-)**
+- Video demo: **TODO(team): add unlisted video link**
 
 ## Results (final holdout, 2024-07-01 → 2025-12-29, scored once)
 
@@ -101,18 +101,13 @@ docs/                   PRD, data audit
 | Tool | Who | What for |
 |---|---|---|
 | Claude Code (Anthropic, Claude Opus 5.5) | Joydeep | Data audit, code, tests and documentation drafts. Every change was reviewed and committed by a team member; all numbers come from code in this repo. |
-| Gemini (Google) | Apu | Help with the demo video and the dashboard frontend |
-| Astra | Ridwan | Help with part of the data and feature work |
+| TODO(team): other tools | TODO(team) | TODO(team) |
 
 No AI model is used inside the product: forecasts come from scikit-learn models trained on the dataset.
 
 ## Team
 
-| Member | Role |
-|---|---|
-| **Joydeep** | Lead · documentation · data and features · model and validation |
-| **Apu** | Demo video · dashboard frontend |
-| **Ridwan** | Data and features (part) |
+TODO(team): names and roles (P1 lead/docs/video, P2 data/features, P3 model/validation, P4 app).
 
 ## Limitations
 
