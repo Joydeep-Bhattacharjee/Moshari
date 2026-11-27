@@ -4,7 +4,7 @@ else
   PY := .venv/bin/python
 endif
 
-.PHONY: setup validate features eda backtest selection train export report test app
+.PHONY: setup validate features eda backtest selection train export report test app exports offline-check
 
 setup:
 	python -m venv .venv
@@ -41,3 +41,12 @@ test:
 
 app:
 	npm run dev
+
+# Phase 2: commissioner pack for the demo scenario (golden files for offline-check)
+exports:
+	$(PY) -m src.ops.export_pack
+
+# Phase 2: rebuild the committed pack with sockets blocked, then print the banner
+offline-check:
+	$(PY) -m pytest -q tests/test_offline.py
+	$(PY) -m src.ops.selfcheck
