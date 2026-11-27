@@ -46,7 +46,8 @@ def test_falls_back_to_the_cached_forecast_when_the_model_is_missing(model, week
     assert "model file not found" in result.reason
     expected = forecast_window(*model, ASOF, 4)
     assert list(result.window.columns) == list(WINDOW_COLS)
-    np.testing.assert_array_equal(result.window["expected_cases"], expected["expected_cases"])
+    # The cache was exported on another machine: last-bit BLAS differences are allowed.
+    np.testing.assert_allclose(result.window["expected_cases"], expected["expected_cases"], rtol=1e-9)
     assert (result.window["tier"] == expected["tier"]).all()
 
 

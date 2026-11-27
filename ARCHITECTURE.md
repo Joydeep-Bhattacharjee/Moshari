@@ -189,7 +189,7 @@ flowchart LR
 ## 13. Offline design
 
 - No network imports in `src/ops` (tested). Fonts, charts and data are bundled; the browser makes no request after loading `public/data/ops/*.json`.
-- `tests/test_offline.py` blocks `socket.socket`, `create_connection` and `getaddrinfo`, rebuilds the committed `exports/` pack from `exports/scenario.json` and requires all 186 files to match byte for byte. `python -m src.ops.selfcheck` prints `OFFLINE MODE ✓ model ✓ data ✓ templates ✓`; `make offline-check` runs both.
+- `tests/test_offline.py` blocks `socket.socket`, `create_connection` and `getaddrinfo`, rebuilds the committed `exports/` pack from `exports/scenario.json` and requires all 186 files to match: text byte for byte, the zip entry for entry (deflate bytes differ between zlib builds, e.g. Windows and Linux). `python -m src.ops.selfcheck` prints `OFFLINE MODE ✓ model ✓ data ✓ templates ✓`; `make offline-check` runs both.
 - Forecast fallback chain (`src/ops/fallback.py`): Phase 1 model → cached forecast (`forecasts.json`) → seasonal mean of the same ISO week in earlier years (always available, leak-free). It steps down only when the model cannot load, and reports which source it used.
 - Portability: the data hash reads CRLF as LF (git `autocrlf` checkouts), and `.gitattributes` keeps `exports/` byte-exact and out of Git LFS.
 

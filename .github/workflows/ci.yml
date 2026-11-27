@@ -18,7 +18,18 @@ jobs:
       - name: Validate raw data
         run: python -m src.validate
       - name: Run tests
-        run: pytest -q
+        run: pytest -q --junitxml=pytest-report.xml
+      # Job logs need a GitHub login; annotations are public, so failures show up there too.
+      - name: Show failed tests as annotations
+        if: failure()
+        run: |
+          python - <<'EOF'
+          import xml.etree.ElementTree as ET
+          for case in ET.parse("pytest-report.xml").iter("testcase"):
+              for bad in [*case.iter("failure"), *case.iter("error")]:
+                  message = " ".join((bad.get("message") or "").split())[:600]
+                  print(f"::error title={case.get('classname')}.{case.get('name')}::{message}")
+          EOF
 
   frontend:
     runs-on: ubuntu-latest

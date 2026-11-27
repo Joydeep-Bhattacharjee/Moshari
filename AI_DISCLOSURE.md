@@ -16,7 +16,7 @@ Phase 2 was built in a supervised session, one module at a time, each committed 
 - **Data:** the onsite file is checked cell by cell against the Phase 1 data and its `.xlsx` original; the supply formulas are checked on all 31,320 rows with exact decimal arithmetic (`tests/test_onsite_dataset.py`, `tests/test_formulas.py`).
 - **Decisions:** property tests compare the allocation with the scipy HiGHS LP optimum, the routing with scipy's max-flow, and the crew auto-suggest with brute force (`tests/test_allocate.py`, `tests/test_overflow.py`, `tests/test_simulate.py`).
 - **Browser vs Python:** the TypeScript port must reproduce six Python scenarios exactly, including every SMS, WhatsApp message and brief (`scripts/test-ops.test.ts`).
-- **Offline:** the committed export pack is rebuilt with all sockets blocked and must match byte for byte (`tests/test_offline.py`).
+- **Offline:** the committed export pack is rebuilt with all sockets blocked and must match exactly: every text file byte for byte, the zip entry for entry (`tests/test_offline.py`).
 - **Screens:** all six tabs and the Explain drawer were opened in a headless browser with no console errors.
 
 ## Decisions taken with the team

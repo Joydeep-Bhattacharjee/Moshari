@@ -1,5 +1,6 @@
 """The committed Python -> TypeScript fixtures must match what the Python core produces now."""
 import json
+import math
 
 import pytest
 
@@ -14,11 +15,28 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def assert_same(committed, fresh, path: str = "fixtures") -> None:
+    """Exact for text, integers and structure; floats to 1e-9 relative, because model
+    predictions can differ in the last bit between platforms' BLAS builds."""
+    if isinstance(committed, float) or isinstance(fresh, float):
+        assert math.isclose(committed, fresh, rel_tol=1e-9, abs_tol=1e-12), path
+    elif isinstance(fresh, dict):
+        assert committed.keys() == fresh.keys(), path
+        for key in fresh:
+            assert_same(committed[key], fresh[key], f"{path}.{key}")
+    elif isinstance(fresh, list):
+        assert len(committed) == len(fresh), path
+        for i, (a, b) in enumerate(zip(committed, fresh)):
+            assert_same(a, b, f"{path}[{i}]")
+    else:
+        assert committed == fresh, f"{path}: fixtures are stale, run python -m src.ops.parity"
+
+
 def test_committed_fixtures_are_up_to_date():
     assert FIXTURE_PATH.exists(), "run python -m src.ops.parity"
     committed = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     fresh = json.loads(json.dumps(build_fixtures(load_context(git_commit=dashboard_commit()))))
-    assert committed == fresh, "fixtures are stale: run python -m src.ops.parity"
+    assert_same(committed, fresh)
 
 
 def test_scenarios_cover_every_setting():

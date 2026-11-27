@@ -1,8 +1,9 @@
 """Offline resilience (PRD 6.5): with every socket blocked, the whole chain rebuilds the
-committed export pack byte for byte."""
+committed export pack exactly: every text file byte for byte, the zip entry for entry."""
 import json
 import re
 import socket
+import zipfile
 
 import pytest
 
@@ -19,6 +20,11 @@ pytestmark = pytest.mark.skipif(
 NETWORK_IMPORT = re.compile(r"^\s*(?:import|from)\s+(socket|requests|urllib|http|httpx|aiohttp|ftplib)\b", re.M)
 
 
+def zip_entries(path) -> list[tuple[str, tuple, bytes]]:
+    with zipfile.ZipFile(path) as archive:
+        return [(info.filename, info.date_time, archive.read(info)) for info in archive.infolist()]
+
+
 @pytest.fixture
 def no_network(monkeypatch):
     selfcheck.block_network(monkeypatch.setattr)
@@ -31,7 +37,7 @@ def test_sockets_really_are_blocked(no_network):
         socket.getaddrinfo("example.com", 443)
 
 
-def test_chain_rebuilds_the_committed_pack_byte_for_byte_offline(no_network, tmp_path):
+def test_chain_rebuilds_the_committed_pack_exactly_offline(no_network, tmp_path):
     meta = json.loads((EXPORT_DIR / "scenario.json").read_text(encoding="utf-8"))
     ctx = load_context(git_commit=meta["git_commit"])
     assert ctx.data_hash == meta["data_hash"]
@@ -42,7 +48,12 @@ def test_chain_rebuilds_the_committed_pack_byte_for_byte_offline(no_network, tmp
     rebuilt = sorted(p.relative_to(tmp_path) for p in tmp_path.rglob("*") if p.is_file())
     assert rebuilt == committed
     for rel in committed:
-        assert (tmp_path / rel).read_bytes() == (EXPORT_DIR / rel).read_bytes(), rel
+        if rel.suffix == ".zip":
+            # Deflate bytes depend on the zlib build (Windows vs Linux), so the archive is
+            # compared by what it holds: entry names, timestamps and decompressed bytes.
+            assert zip_entries(tmp_path / rel) == zip_entries(EXPORT_DIR / rel), rel
+        else:
+            assert (tmp_path / rel).read_bytes() == (EXPORT_DIR / rel).read_bytes(), rel
 
 
 def test_decision_core_has_no_network_imports():
