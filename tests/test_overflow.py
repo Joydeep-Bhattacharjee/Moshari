@@ -35,18 +35,18 @@ def test_deficit_ward_sends_patients_to_a_donor_with_headroom():
     wards = result.wards.set_index(cfg.WARD_COL)
     assert list(result.wards.columns) == list(WARD_ROUTE_COLS)
     assert wards.loc["A", ["deficit_before", "sent", "unplaced"]].tolist() == [3, 3, 0]
-    assert wards.loc["B", ["received", "headroom_after"]].tolist() == [3, 0]
+    assert wards.loc["B", ["received", "headroom_after"]].tolist() == [3, 1]
 
 
 def test_least_utilised_donor_is_used_first():
     result = route_overflow(city_table([("A", 6, 3, 0.9), ("B", 1, 5, 0.5), ("D", 0, 2, 0.1)]))
-    assert result.transfers[["to_ward", "patients"]].values.tolist() == [["D", 1], ["B", 2]]
+    assert result.transfers[["to_ward", "patients"]].values.tolist() == [["D", 2], ["B", 1]]
 
 
 def test_higher_priority_deficit_ward_is_placed_first_when_beds_are_scarce():
     result = route_overflow(city_table([("A", 5, 3, 0.2), ("B", 5, 3, 0.9), ("C", 0, 3, 0.1)]))
-    assert result.transfers[["from_ward", "patients"]].values.tolist() == [["B", 2]]
-    assert result.wards.set_index(cfg.WARD_COL).loc["A", "unplaced"] == 2
+    assert result.transfers[["from_ward", "patients"]].values.tolist() == [["B", 2], ["A", 1]]
+    assert result.wards.set_index(cfg.WARD_COL).loc["A", "unplaced"] == 1
 
 
 def test_patients_never_cross_city_lines_and_saturation_is_flagged():
@@ -65,10 +65,11 @@ def test_patients_never_cross_city_lines_and_saturation_is_flagged():
     assert cities.loc["Narayanganj", ["unplaced", "alert"]].tolist() == [0, "OK"]
 
 
-def test_ten_percent_buffer_is_kept_free_on_donors():
-    assert usable_capacity(pd.Series([1, 3, 5, 10])).tolist() == [0, 2, 4, 9]
+def test_buffer_is_ten_percent_of_beds_rounded_down():
+    # A 1-9 bed ward cannot keep a fraction of a bed free, so all its beds stay usable.
+    assert usable_capacity(pd.Series([1, 3, 5, 9, 10, 25])).tolist() == [1, 3, 5, 9, 9, 23]
     result = route_overflow(city_table([("A", 9, 1, 0.9), ("B", 0, 1, 0.5)]))
-    assert result.transfers.empty  # 1 bed minus 10% buffer leaves no usable bed
+    assert result.transfers[["from_ward", "to_ward", "patients"]].values.tolist() == [["A", "B", 1]]
 
 
 def test_city_summary_reports_utilisation_and_cross_check():
@@ -138,7 +139,7 @@ def test_routing_is_deterministic(cities):
 
 def test_max_flow_on_a_known_city():
     assert max_flow_moved([7, 1, 2], [4, 5, 3]) == 3
-    assert max_flow_moved([9, 0], [1, 1]) == 0
+    assert max_flow_moved([9, 0], [1, 1]) == 1
 
 
 # --- Capacity proxy -----------------------------------------------------------

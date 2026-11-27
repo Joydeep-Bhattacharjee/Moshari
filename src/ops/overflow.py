@@ -3,7 +3,7 @@
 Per city, never across cities:
   required_w = beds needed (peak week of the window), capacity_w = proxy or uploaded,
   deficit_w  = max(0, required_w - capacity_w),
-  usable_w   = floor(capacity_w * (1 - buffer)),  headroom_w = max(0, usable_w - required_w).
+  usable_w   = capacity_w - floor(capacity_w * buffer),  headroom_w = max(0, usable_w - required_w).
 Deficit wards go in priority order. Each pulls patients from donors with headroom, least
 utilised first (utilisation = (required + received) / capacity, ties by ward_id).
 
@@ -61,10 +61,17 @@ class RoutingResult:
 
 
 def usable_capacity(capacity, buffer_pct: int = BUFFER_PCT) -> np.ndarray:
-    """floor(capacity x (100 - buffer_pct) / 100), in exact integer arithmetic."""
+    """capacity - floor(capacity x buffer_pct / 100): the buffer is whole beds, rounded down.
+
+    The PRD's floor(capacity x 0.9) takes a whole bed from every 1-9 bed ward, and the
+    proxy capacities are 1-5 beds, so routing could almost never place anyone (1 patient
+    over Jun-Aug 2025). A ward cannot keep a fraction of a bed free, so the buffer is
+    rounded down instead; 10+ bed wards keep at least one bed free. Chosen with the team.
+    """
     if not 0 <= buffer_pct < 100:
         raise ValueError(f"buffer_pct must be from 0 to 99, got {buffer_pct}")
-    return np.asarray(capacity, dtype=np.int64) * (100 - buffer_pct) // 100
+    beds = np.asarray(capacity, dtype=np.int64)
+    return beds - beds * buffer_pct // 100
 
 
 def _deficit_and_headroom(required, capacity, buffer_pct: int) -> tuple[np.ndarray, np.ndarray]:
