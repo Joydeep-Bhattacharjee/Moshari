@@ -119,6 +119,14 @@ def test_brief_is_a4_print_html_with_chart_and_escaped_values():
     assert "<b>W</b>" not in html
 
 
+def test_chart_numbers_round_half_up_the_same_way_as_javascript():
+    # Python's format() rounds exact binary ties to even (0.25 -> "0.2"); JS toFixed rounds
+    # them up. The brief formats through fmt1 so Python and the TypeScript port agree.
+    from src.ops.brief import fmt1
+
+    assert [fmt1(v) for v in (0.25, 0.75, 2.45, 12.0, 0.04)] == ["0.3", "0.8", "2.5", "12.0", "0.0"]
+
+
 @pytest.mark.parametrize("render", [render_sms, render_whatsapp, render_brief])
 def test_every_format_carries_every_required_field(render):
     notice = make_notice()

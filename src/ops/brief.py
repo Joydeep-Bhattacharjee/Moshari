@@ -5,10 +5,11 @@ renders offline. Every value is HTML-escaped.
 """
 from __future__ import annotations
 
+import math
 from html import escape
 
 from src.ops.dispatch_text import overflow_text
-from src.ops.notices import Notice, WeekBand, actions
+from src.ops.notices import Notice, WeekBand, actions, display_cases
 
 CHART_W, CHART_H, CHART_PAD = 520, 170, 34
 RISK_COLOURS = ("#2f7d4f", "#b7791f", "#c2410c", "#9b1c1c")  # Low, Medium, High, Critical
@@ -40,6 +41,12 @@ footer { margin-top: 26px; border-top: 1px solid #d6d3d1; padding-top: 8px; font
 """
 
 
+def fmt1(value: float) -> str:
+    """One decimal, rounded half up as floor(x * 10 + 0.5) / 10, so the TypeScript port
+    (Math.floor) prints the same digits; format() alone rounds exact ties to even."""
+    return f"{math.floor(value * 10 + 0.5) / 10:.1f}"
+
+
 def band_chart(weeks: tuple[WeekBand, ...]) -> str:
     """Inline SVG: P10-P90 band, expected line, actual cases as dark dots."""
     top = max([w.p90 for w in weeks] + [w.actual or 0.0 for w in weeks] + [1.0])
@@ -49,17 +56,17 @@ def band_chart(weeks: tuple[WeekBand, ...]) -> str:
     def y(value: float) -> float:
         return CHART_H - CHART_PAD - (CHART_H - 2 * CHART_PAD) * value / top
 
-    upper = [f"{x:.1f},{y(w.p90):.1f}" for x, w in zip(xs, weeks)]
-    lower = [f"{x:.1f},{y(w.p10):.1f}" for x, w in zip(reversed(xs), reversed(weeks))]
-    line = " ".join(f"{x:.1f},{y(w.expected):.1f}" for x, w in zip(xs, weeks))
-    points = "".join(f'<circle class="point" cx="{x:.1f}" cy="{y(w.expected):.1f}" r="3"/>' for x, w in zip(xs, weeks))
+    upper = [f"{fmt1(x)},{fmt1(y(w.p90))}" for x, w in zip(xs, weeks)]
+    lower = [f"{fmt1(x)},{fmt1(y(w.p10))}" for x, w in zip(reversed(xs), reversed(weeks))]
+    line = " ".join(f"{fmt1(x)},{fmt1(y(w.expected))}" for x, w in zip(xs, weeks))
+    points = "".join(f'<circle class="point" cx="{fmt1(x)}" cy="{fmt1(y(w.expected))}" r="3"/>' for x, w in zip(xs, weeks))
     actuals = "".join(
-        f'<circle class="actual" cx="{x:.1f}" cy="{y(w.actual):.1f}" r="4"/>'
+        f'<circle class="actual" cx="{fmt1(x)}" cy="{fmt1(y(w.actual))}" r="4"/>'
         for x, w in zip(xs, weeks)
         if w.actual is not None
     )
     labels = "".join(
-        f'<text x="{x:.1f}" y="{CHART_H - 10}" text-anchor="middle">{escape(w.target_week)}</text>'
+        f'<text x="{fmt1(x)}" y="{CHART_H - 10}" text-anchor="middle">{escape(w.target_week)}</text>'
         for x, w in zip(xs, weeks)
     )
     return (
@@ -67,7 +74,7 @@ def band_chart(weeks: tuple[WeekBand, ...]) -> str:
         f'aria-label="Weekly forecast band">'
         f'<polygon class="band" points="{" ".join(upper + lower)}"/>'
         f'<polyline class="line" points="{line}"/>{points}{actuals}{labels}'
-        f'<text x="{CHART_PAD}" y="14">{top:.0f} cases/wk</text>'
+        f'<text x="{CHART_PAD}" y="14">{display_cases(top)} cases/wk</text>'
         f'<text x="{CHART_W - CHART_PAD}" y="14" text-anchor="end">band P10-P90 · line expected · dot actual</text>'
         "</svg>"
     )
