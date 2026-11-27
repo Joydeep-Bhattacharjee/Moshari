@@ -35,9 +35,12 @@ if (!python) {
 
 console.log(`[moshari] Rebuilding forecasts from models/model.joblib with ${python} ...`);
 const started = Date.now();
-const run = spawnSync(python, ["-m", "src.export"], { stdio: "inherit" });
-if (run.status !== 0) {
-  console.warn("[moshari] Export failed; the dashboard will use the committed forecasts in public/data.");
-  process.exit(0);
+// Phase 1 dashboard data, then the Phase 2 operations data (public/data/ops).
+for (const module of ["src.export", "src.ops.ui_export"]) {
+  const run = spawnSync(python, ["-m", module], { stdio: "inherit" });
+  if (run.status !== 0) {
+    console.warn(`[moshari] ${module} failed; the dashboard will use the committed files in public/data.`);
+    process.exit(0);
+  }
 }
 console.log(`[moshari] Forecasts rebuilt in ${((Date.now() - started) / 1000).toFixed(1)} s.`);
