@@ -144,3 +144,10 @@
 *.stl                filter=lfs diff=lfs merge=lfs -text
 *.nc                 filter=lfs diff=lfs merge=lfs -text
 *.mat                filter=lfs diff=lfs merge=lfs -text
+
+# ---------------------------------------------------------------------------
+# Golden export pack: the offline test compares these byte for byte, so keep the
+# exact bytes on every OS (no line-ending conversion) and keep the zip out of LFS.
+# ---------------------------------------------------------------------------
+exports/**           -text -filter
+exports/*.zip        -diff -merge

@@ -57,7 +57,10 @@ class ScenarioRun:
 
 
 def file_hash(path: Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:DATA_HASH_CHARS]
+    """sha256 of the file with CRLF read as LF: git autocrlf gives Windows checkouts CRLF and
+    Linux checkouts LF, and the same data must give the same hash (and scenario_id) on both."""
+    content = Path(path).read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(content).hexdigest()[:DATA_HASH_CHARS]
 
 
 def load_context(data_path: Path = cfg.ONSITE_DATA_PATH, git_commit: str = "unknown") -> Context:

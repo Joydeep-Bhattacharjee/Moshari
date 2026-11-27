@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from src import config as cfg
-from src.ops.pipeline import load_context, run_scenario
+from src.ops.pipeline import file_hash, load_context, run_scenario
 from src.ops.scenario import Scenario, scenario_id
 
 needs_model = pytest.mark.skipif(
@@ -48,6 +48,16 @@ def test_scenario_id_is_short_stable_and_sensitive_to_every_input():
     assert scenario_id(Scenario(stock_pct=60), "datahash", "abc1234") != base
     assert scenario_id(Scenario(), "otherdata", "abc1234") != base
     assert scenario_id(Scenario(), "datahash", "def5678") != base
+
+
+def test_data_hash_ignores_line_endings(tmp_path):
+    # git autocrlf gives Windows checkouts CRLF and Linux checkouts LF: same data, same hash.
+    lf, crlf, changed = tmp_path / "lf.csv", tmp_path / "crlf.csv", tmp_path / "changed.csv"
+    lf.write_bytes(b"a,b\n1,2\n")
+    crlf.write_bytes(b"a,b\r\n1,2\r\n")
+    changed.write_bytes(b"a,b\n1,3\n")
+    assert file_hash(lf) == file_hash(crlf)
+    assert file_hash(lf) != file_hash(changed)
 
 
 @pytest.fixture(scope="module")
