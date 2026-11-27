@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit -p .",
-    "test": "node --test scripts/test-dashboard.mjs"
+    "test": "node --test scripts/test-dashboard.mjs scripts/test-ops.test.ts"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",
