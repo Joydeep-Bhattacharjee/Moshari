@@ -26,3 +26,4 @@ reports/
 data/processed/features.csv
 node_modules/
 dist/
+.gstack/

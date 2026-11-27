@@ -12,6 +12,7 @@ import { gsmLength, renderSms, renderWhatsapp, smsSegments } from "../src/lib/op
 import { buildNotices } from "../src/lib/ops/notices.ts";
 import { runScenario } from "../src/lib/ops/pipeline.ts";
 import { sha1Hex } from "../src/lib/ops/sha1.ts";
+import { buildZip, crc32 } from "../src/lib/ops/zip.ts";
 import type { OpsConfig, OpsForecasts, Scenario } from "../src/lib/ops/types.ts";
 
 interface FixtureScenario {
@@ -67,6 +68,20 @@ test("GSM length counts extension characters twice", () => {
   assert.equal(gsmLength("[x]|"), 7);
   assert.equal(smsSegments("a".repeat(161)), 2);
   assert.throws(() => gsmLength("ডেঙ্গু"), /GSM/);
+});
+
+test("zip writer: CRC32 known value and a well-formed archive", () => {
+  assert.equal(crc32(new TextEncoder().encode("hello")), 0x3610a686);
+  const zip = buildZip([
+    { name: "sms/A.txt", content: "hi" },
+    { name: "briefs/A.html", content: "<p>ok</p>" },
+  ]);
+  const view = new DataView(zip.buffer);
+  assert.equal(view.getUint32(0, true), 0x04034b50);
+  const eocd = zip.length - 22;
+  assert.equal(view.getUint32(eocd, true), 0x06054b50);
+  assert.equal(view.getUint16(eocd + 10, true), 2);
+  assert.deepEqual(buildZip([{ name: "a", content: "b" }]), buildZip([{ name: "a", content: "b" }]));
 });
 
 test("fixtures were built from this dashboard data", () => {

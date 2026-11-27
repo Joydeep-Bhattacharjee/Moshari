@@ -444,6 +444,11 @@ export default function App() {
             <ShieldCheck size={14} />
           </div>
           <p>{l("Local intelligence. Zero API costs.", "স্থানীয় তথ্য। কোনো API খরচ নেই।")}</p>
+          <p>
+            <a className="text-link" href="#/">
+              {l("Operations dashboard →", "অপারেশনস ড্যাশবোর্ড →")}
+            </a>
+          </p>
           <div className="sidebar-version">
             <span>
               Moshari <b>v2.0</b>
