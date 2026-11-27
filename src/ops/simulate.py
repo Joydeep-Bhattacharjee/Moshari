@@ -10,9 +10,10 @@ Why the ratio comes from the GLMs: their water-logging terms both have positive
 coefficients, so log(cases) moves by (b_wl + b_int * recent_rain) * d_wl. Lowering
 water-logging can then only lower cases, and each extra crew prevents less than the last
 (concave), which also makes the marginal-gain auto-suggest optimal. The 4-week tree model
-and the P90 tree models are not monotone in water-logging (steps of up to 0.5 case), so
-they keep their baselines and take the GLM ratio; week +4 uses the 3-week GLM on the same
-as-of rows. This is model-based sensitivity, not a causal estimate: the index is static
+is constrained in water-logging but not in rain x water-logging, which an intervention
+also lowers, and the P90 models are unconstrained, so their forecast can rise when
+water-logging falls (by up to 0.5 case). They keep their baselines and take the GLM ratio;
+week +4 uses the 3-week GLM on the same as-of rows. This is model-based sensitivity, not a causal estimate: the index is static
 per ward, so its effect was learned across wards. r_max is an assumption to calibrate.
 """
 from __future__ import annotations
