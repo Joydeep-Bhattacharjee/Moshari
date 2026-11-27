@@ -89,3 +89,30 @@ Part 3.4 will compute this in `src/` and store it in `models/meta.json`.
 - Data ends 2025-12-29. The PRD's CLI example date `2026-08-03` is outside the data.
 - For h = 4, the last forecast-origin week with a known actual is 2025-12-01.
 - The ward columns are constant, so the model cannot learn how a ward changes over time — only differences between wards.
+
+## 8. Onsite dataset (Phase 2)
+
+**Source:** organizer file `bangladesh_dengue_large_dataset_onsite.xlsx` (md5 `f0ca5b3294a9918922b096b774b34fbe`), exported by Google Sheets to CSV and committed as `data/raw/bangladesh_dengue_large_dataset_onsite.csv` (md5 `919cf51e5bf4403c0297f10640be21c3`).
+**Reproduce:** `pytest tests/test_onsite_dataset.py`.
+**Audit date:** 2026-11-27.
+
+| Check | Result |
+|---|---|
+| CSV vs xlsx | header equal; all 31,320 × 15 cells equal (dates compared as Excel serials); the xlsx holds static values, no formulas |
+| Shape | 31,320 × 15 — the 12 Phase 1 columns plus `saline_bags_needed`, `diagnostic_kits_needed`, `hospital_beds_required` |
+| Phase 1 columns | byte-identical to `data/raw/dengue.csv`, same row order → the Phase 1 model and its holdout metrics stay valid, no retrain |
+| Supply columns | integers ≥ 0, no missing values; all three are 0 on every zero-case row |
+
+**Supply formulas.** Each supply column is a fixed multiple of `dengue_cases`, rounded to an integer.
+Checked on all 31,320 rows (13,144 with cases > 0) with exact decimal arithmetic, so float error cannot hide a mismatch:
+
+| Column | Per case | Exact `.5` ties in data | Mismatches: half-up | half-down | half-even |
+|---|---|---|---|---|---|
+| `saline_bags_needed` | 2.385 | 0 | 0 | 0 | 0 |
+| `diagnostic_kits_needed` | 1.165 | 0 | 0 | 0 | 0 |
+| `hospital_beds_required` | 0.300 | 1,197 | 1,197 | **0** | 969 |
+
+**Finding:** ties are rounded **down** (5 cases → 1.5 → 1 bed; 15 → 4.5 → 4).
+Only the beds column ever hits an exact `.5`, at 5, 15, 25 and 35 cases.
+This differs from the PRD, which says round half up. The data is the ground truth, so Phase 2 rounds half down for all three columns, which matches every row.
+The multipliers are stored as exact integers per 1,000 cases in `src/config.py` (`SUPPLY_PER_1000_CASES`), so Python and the TypeScript port compute identical integers with no float rounding.

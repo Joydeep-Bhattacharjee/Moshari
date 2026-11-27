@@ -6,6 +6,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_DATA_PATH = ROOT / "data" / "raw" / "dengue.csv"
+# Phase 2: the Phase 1 columns unchanged, plus three supply columns (docs/data_audit.md §8).
+ONSITE_DATA_PATH = ROOT / "data" / "raw" / "bangladesh_dengue_large_dataset_onsite.csv"
 PROCESSED_DIR = ROOT / "data" / "processed"
 FEATURES_PATH = PROCESSED_DIR / "features.csv"
 FEATURE_PARAMS_PATH = PROCESSED_DIR / "feature_params.json"
@@ -34,6 +36,15 @@ TEMP_COLS = (TEMP_COL, TEMP_MAX_COL, TEMP_MIN_COL)
 WEATHER_COLS = (RAIN_COL, *TEMP_COLS, HUMIDITY_COL)
 NUMERIC_COLS = (*STATIC_WARD_COLS, *WEATHER_COLS, TARGET_COL)
 REQUIRED_COLS = (DATE_COL, CITY_COL, WARD_COL, *NUMERIC_COLS)
+
+# --- Supply (onsite dataset, Phase 2) ----------------------------------------
+SALINE_COL = "saline_bags_needed"
+KITS_COL = "diagnostic_kits_needed"
+BEDS_COL = "hospital_beds_required"
+SUPPLY_COLS = (SALINE_COL, KITS_COL, BEDS_COL)
+# Units per 1,000 cases, kept as exact integers so Python and TypeScript agree bit for bit.
+# units = round_half_down(cases * per_1000 / 1000); half-down matches all 31,320 rows.
+SUPPLY_PER_1000_CASES = {SALINE_COL: 2385, KITS_COL: 1165, BEDS_COL: 300}
 
 # --- Grain ------------------------------------------------------------------
 DATA_FREQ = "W-MON"  # one row per ward per week; weeks start on Monday
