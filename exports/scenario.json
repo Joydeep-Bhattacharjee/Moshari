@@ -63,8 +63,8 @@
   ],
   "crews_assigned": 20,
   "data_hash": "e573f654023b62a8",
-  "generated_at": "2026-11-27 12:50",
-  "git_commit": "2577bc7",
+  "generated_at": "2026-11-27 13:05",
+  "git_commit": "fd79b2d",
   "scenario": {
     "apply_intervention": true,
     "asof": "2025-06-30",
@@ -76,7 +76,7 @@
     "stock_pct": 60,
     "weeks": 2
   },
-  "scenario_id": "bd173a0d",
+  "scenario_id": "65be0253",
   "summary": {
     "banner": "36 wards critical \u00b7 saline short 1,351 bags \u00b7 kits short 660 kits",
     "critical_wards": 36,

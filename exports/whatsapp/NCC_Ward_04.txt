@@ -13,4 +13,4 @@ Risk: *CRITICAL* · Forecast 14 cases/wk (P90 16), 2025-07-07 to 2025-07-14
 1. Escalate: 2 patients without a bed in Narayanganj; request field beds or regional support.
 2. Report cases daily to the city health office.
 
-_As of 2025-06-30 · Scenario bd173a0d · 2026-11-27 12:50_
+_As of 2025-06-30 · Scenario 65be0253 · 2026-11-27 13:05_

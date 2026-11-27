@@ -12,4 +12,4 @@ Risk: *CRITICAL* · Forecast 15 cases/wk (P90 19), 2025-07-07 to 2025-07-14
 *Actions*
 1. Report cases daily to the city health office.
 
-_As of 2025-06-30 · Scenario bd173a0d · 2026-11-27 12:50_
+_As of 2025-06-30 · Scenario 65be0253 · 2026-11-27 13:05_
