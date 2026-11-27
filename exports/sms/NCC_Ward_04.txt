@@ -1,0 +1,1 @@
+DENGUE 2025-06-30 NCC_Ward_04 Ngonj CRITICAL 14c/wk (P90 16); Saline 51/51; Kits 25/25; Beds 4/cap2; Crews 0; DEFICIT; Escalate 2pt; ID bd173a0d 2026-11-27 12:50

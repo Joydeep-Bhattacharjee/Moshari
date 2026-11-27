@@ -1,0 +1,17 @@
+*DENGUE ALERT · NCC_Ward_03 (Narayanganj)*
+Risk: *HIGH* · Forecast 11 cases/wk (P90 15), 2025-07-07 to 2025-07-14
+
+*Supplies (allocated / required)*
+• Saline: 7 / 43 bags (DEFICIT 36)
+• Test kits: 3 / 20 (DEFICIT 17)
+• Beds: 3 needed / 3 capacity (proxy P75)
+
+*Spray crews:* 0
+*Overflow:* none
+
+*Actions*
+1. Request 36 more saline bags (emergency procurement).
+2. Request 17 more test kits.
+3. Report cases daily to the city health office.
+
+_As of 2025-06-30 · Scenario bd173a0d · 2026-11-27 12:50_

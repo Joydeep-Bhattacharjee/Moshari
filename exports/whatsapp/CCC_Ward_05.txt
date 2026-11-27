@@ -1,0 +1,17 @@
+*DENGUE ALERT · CCC_Ward_05 (Chattogram)*
+Risk: *HIGH* · Forecast 8 cases/wk (P90 13), 2025-07-07 to 2025-07-14
+
+*Supplies (allocated / required)*
+• Saline: 5 / 32 bags (DEFICIT 27)
+• Test kits: 3 / 16 (DEFICIT 13)
+• Beds: 2 needed / 2 capacity (proxy P75)
+
+*Spray crews:* 0
+*Overflow:* none
+
+*Actions*
+1. Request 27 more saline bags (emergency procurement).
+2. Request 13 more test kits.
+3. Report cases daily to the city health office.
+
+_As of 2025-06-30 · Scenario bd173a0d · 2026-11-27 12:50_

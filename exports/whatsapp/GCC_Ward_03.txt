@@ -1,0 +1,16 @@
+*DENGUE ALERT · GCC_Ward_03 (Gazipur)*
+Risk: *CRITICAL* · Forecast 22 cases/wk (P90 23), 2025-07-07 to 2025-07-14
+
+*Supplies (allocated / required)*
+• Saline: 83 / 83 bags
+• Test kits: 40 / 40
+• Beds: 7 needed / 4 capacity (proxy P75)
+
+*Spray crews:* 0
+*Overflow:* 3 patients unplaced: escalate
+
+*Actions*
+1. Escalate: 3 patients without a bed in Gazipur; request field beds or regional support.
+2. Report cases daily to the city health office.
+
+_As of 2025-06-30 · Scenario bd173a0d · 2026-11-27 12:50_

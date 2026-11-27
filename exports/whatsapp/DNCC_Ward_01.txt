@@ -1,0 +1,16 @@
+*DENGUE ALERT · DNCC_Ward_01 (Dhaka North)*
+Risk: *CRITICAL* · Forecast 20 cases/wk (P90 20), 2025-07-07 to 2025-07-14
+
+*Supplies (allocated / required)*
+• Saline: 79 / 79 bags
+• Test kits: 39 / 39
+• Beds: 6 needed / 4 capacity (proxy P75)
+
+*Spray crews:* 0
+*Overflow:* 2 patients unplaced: escalate
+
+*Actions*
+1. Escalate: 2 patients without a bed in Dhaka North; request field beds or regional support.
+2. Report cases daily to the city health office.
+
+_As of 2025-06-30 · Scenario bd173a0d · 2026-11-27 12:50_

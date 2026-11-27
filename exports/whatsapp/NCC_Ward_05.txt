@@ -1,0 +1,16 @@
+*DENGUE ALERT · NCC_Ward_05 (Narayanganj)*
+Risk: *CRITICAL* · Forecast 29 cases/wk (P90 29), 2025-07-07 to 2025-07-14
+
+*Supplies (allocated / required)*
+• Saline: 111 / 111 bags
+• Test kits: 55 / 55
+• Beds: 9 needed / 4 capacity (proxy P75)
+
+*Spray crews:* 0
+*Overflow:* 5 patients unplaced: escalate
+
+*Actions*
+1. Escalate: 5 patients without a bed in Narayanganj; request field beds or regional support.
+2. Report cases daily to the city health office.
+
+_As of 2025-06-30 · Scenario bd173a0d · 2026-11-27 12:50_

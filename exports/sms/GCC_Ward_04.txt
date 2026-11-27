@@ -1,0 +1,1 @@
+DENGUE 2025-06-30 GCC_Ward_04 Gazipur CRITICAL 14c/wk (P90 20); Saline 48/48; Kits 24/24; Beds 4/cap3; Crews 0; DEFICIT; Escalate 1pt; ID bd173a0d 2026-11-27 12:50

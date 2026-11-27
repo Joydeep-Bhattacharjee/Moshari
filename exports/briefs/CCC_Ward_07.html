@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dengue brief · CCC_Ward_07</title><style>
+@page { size: A4; margin: 16mm; }
+* { box-sizing: border-box; }
+body { font-family: Georgia, "Times New Roman", serif; color: #1c1917; margin: 0; line-height: 1.45; }
+header { border-bottom: 3px solid #1c1917; padding-bottom: 10px; margin-bottom: 14px; }
+h1 { font-size: 26px; margin: 0; letter-spacing: -0.01em; }
+h1 .city { font-weight: normal; color: #57534e; font-size: 18px; }
+h2 { font: 600 12px/1.2 system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.08em;
+     color: #57534e; margin: 18px 0 6px; }
+.badge { display: inline-block; font: 700 12px/1 system-ui, sans-serif; color: #fff; padding: 5px 9px;
+         border-radius: 2px; margin-right: 6px; letter-spacing: 0.05em; }
+.deficit { background: #1c1917; }
+.meta { font: 12px system-ui, sans-serif; color: #57534e; margin: 8px 0 0; }
+table { border-collapse: collapse; width: 100%; font: 13px system-ui, sans-serif; }
+th, td { border-bottom: 1px solid #d6d3d1; padding: 6px 8px; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+td.short { color: #9b1c1c; font-weight: 700; }
+svg text { font: 11px system-ui, sans-serif; fill: #57534e; }
+.band { fill: #fde68a; } .line { fill: none; stroke: #9a3412; stroke-width: 2; }
+.point { fill: #9a3412; } .actual { fill: #1c1917; }
+ol { margin: 0; padding-left: 20px; }
+footer { margin-top: 26px; border-top: 1px solid #d6d3d1; padding-top: 8px; font: 12px system-ui, sans-serif;
+         color: #57534e; }
+</style></head>
+<body>
+<header>
+<h1>CCC_Ward_07 <span class="city">Chattogram</span></h1>
+<p><span class="badge" style="background:#9b1c1c">CRITICAL</span><span class="badge deficit">DEFICIT</span></p>
+<p class="meta">As of 2025-06-30 · Scenario bd173a0d · Generated 2026-11-27 12:50</p>
+</header>
+<h2>Forecast</h2>
+<p>Peak 18 cases per week (P90 20) between 2025-07-07 and 2025-07-14.</p>
+<svg viewBox="0 0 520 170" width="520" height="170" role="img" aria-label="Weekly forecast band"><polygon class="band" points="34.0,34.0 486.0,53.1 486.0,136.0 34.0,136.0"/><polyline class="line" points="34.0,47.0 486.0,73.8"/><circle class="point" cx="34.0" cy="47.0" r="3"/><circle class="point" cx="486.0" cy="73.8" r="3"/><circle class="actual" cx="34.0" cy="100.5" r="4"/><circle class="actual" cx="486.0" cy="85.3" r="4"/><text x="34.0" y="160" text-anchor="middle">2025-07-07</text><text x="486.0" y="160" text-anchor="middle">2025-07-14</text><text x="34" y="14">20 cases/wk</text><text x="486" y="14" text-anchor="end">band P10-P90 · line expected · dot actual</text></svg>
+<h2>Supplies</h2>
+<table><thead><tr><th>Item</th><th>Required</th><th>Allocated</th><th>Short</th></tr></thead>
+<tbody><tr><td>Saline bags</td><td>71</td><td>11</td><td class="short">60</td></tr><tr><td>Test kits</td><td>34</td><td>6</td><td class="short">28</td></tr><tr><td>Hospital beds (capacity 4, proxy P75)</td><td>5</td><td>4</td><td class="short">1</td></tr></tbody></table>
+<h2>Spray crews</h2>
+<p>0 crews assigned to this ward.</p>
+<h2>Overflow</h2>
+<p>1 patient unplaced: escalate</p>
+<h2>Actions</h2>
+<ol><li>Request 60 more saline bags (emergency procurement).</li><li>Request 28 more test kits.</li><li>Escalate: 1 patient without a bed in Chattogram; request field beds or regional support.</li><li>Report cases daily to the city health office.</li></ol>
+<footer>Prepared by DengueOps (Moshari) from scenario bd173a0d. Supply numbers use the dataset's own
+formulas; bed capacity is a proxy P75 proxy.<br>Approved by: ______________________ Date: ____________</footer>
+</body></html>

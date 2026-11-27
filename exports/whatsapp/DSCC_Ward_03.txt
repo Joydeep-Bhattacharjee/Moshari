@@ -1,0 +1,18 @@
+*DENGUE ALERT · DSCC_Ward_03 (Dhaka South)*
+Risk: *CRITICAL* · Forecast 18 cases/wk (P90 19), 2025-07-07 to 2025-07-14
+
+*Supplies (allocated / required)*
+• Saline: 11 / 73 bags (DEFICIT 62)
+• Test kits: 6 / 35 (DEFICIT 29)
+• Beds: 5 needed / 4 capacity (proxy P75)
+
+*Spray crews:* 0
+*Overflow:* 1 patient unplaced: escalate
+
+*Actions*
+1. Request 62 more saline bags (emergency procurement).
+2. Request 29 more test kits.
+3. Escalate: 1 patient without a bed in Dhaka South; request field beds or regional support.
+4. Report cases daily to the city health office.
+
+_As of 2025-06-30 · Scenario bd173a0d · 2026-11-27 12:50_

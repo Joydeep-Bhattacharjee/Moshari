@@ -1,0 +1,96 @@
+{
+  "cities": [
+    {
+      "alert": "CITY_SATURATED",
+      "capacity": 30,
+      "city": "Chattogram",
+      "headroom_left": 0,
+      "max_flow": 0,
+      "moved": 0,
+      "required": 43,
+      "unplaced": 13,
+      "usable": 30,
+      "utilization_pct": 143.33
+    },
+    {
+      "alert": "CITY_SATURATED",
+      "capacity": 60,
+      "city": "Dhaka North",
+      "headroom_left": 0,
+      "max_flow": 0,
+      "moved": 0,
+      "required": 88,
+      "unplaced": 28,
+      "usable": 60,
+      "utilization_pct": 146.67
+    },
+    {
+      "alert": "CITY_SATURATED",
+      "capacity": 60,
+      "city": "Dhaka South",
+      "headroom_left": 0,
+      "max_flow": 0,
+      "moved": 0,
+      "required": 89,
+      "unplaced": 29,
+      "usable": 60,
+      "utilization_pct": 148.33
+    },
+    {
+      "alert": "CITY_SATURATED",
+      "capacity": 19,
+      "city": "Gazipur",
+      "headroom_left": 0,
+      "max_flow": 0,
+      "moved": 0,
+      "required": 27,
+      "unplaced": 8,
+      "usable": 19,
+      "utilization_pct": 142.11
+    },
+    {
+      "alert": "CITY_SATURATED",
+      "capacity": 14,
+      "city": "Narayanganj",
+      "headroom_left": 0,
+      "max_flow": 0,
+      "moved": 0,
+      "required": 23,
+      "unplaced": 9,
+      "usable": 14,
+      "utilization_pct": 164.29
+    }
+  ],
+  "crews_assigned": 20,
+  "data_hash": "e573f654023b62a8",
+  "generated_at": "2026-11-27 12:50",
+  "git_commit": "2577bc7",
+  "scenario": {
+    "apply_intervention": true,
+    "asof": "2025-06-30",
+    "band": "base",
+    "confidence": "likely",
+    "crew_mode": "priority",
+    "crews_total": 20,
+    "floor_pct": 15,
+    "stock_pct": 60,
+    "weeks": 2
+  },
+  "scenario_id": "bd173a0d",
+  "summary": {
+    "banner": "36 wards critical \u00b7 saline short 1,351 bags \u00b7 kits short 660 kits",
+    "critical_wards": 36,
+    "resources": {
+      "diagnostic_kits_needed": {
+        "allocated": 989,
+        "need": 1649,
+        "short": 660
+      },
+      "saline_bags_needed": {
+        "allocated": 2025,
+        "need": 3376,
+        "short": 1351
+      }
+    }
+  }
+}
