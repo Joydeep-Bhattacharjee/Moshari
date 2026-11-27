@@ -1,0 +1,26 @@
+# The site build needs only index.html, src/, public/, package files and the Vite config.
+# Patterns start with "/" so they match the repo root only: public/data must be uploaded.
+.venv
+venv
+node_modules
+__pycache__
+.pytest_cache
+.hypothesis
+.gstack
+/.github
+/dist
+/data
+/models
+/tests
+/exports
+/reports
+/docs
+/scripts
+# package-lock.json is the real lockfile (CI runs npm ci); the old pnpm one is out of date.
+/pnpm-lock.yaml
+# Python is not part of the site build. With requirements.txt in the upload, Vercel
+# installs it and compiles numpy/scipy/pandas from source, which stalls the deploy.
+*.py
+/requirements.txt
+/pytest.ini
+/Makefile
